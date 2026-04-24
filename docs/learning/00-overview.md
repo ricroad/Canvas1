@@ -14,9 +14,11 @@
 
 - 节点画布：基于 `@xyflow/react` 的无限画布，支持拖拽、缩放、连线、结果派生、分组、历史回退。
 - 图片链路：上传图片、图生图、文生图、多参考图、裁剪、标注、分镜切图。
-- 分镜链路：剧本上传、LLM 生成分镜提示词、分镜批量出图、故事板节点展示。
+- 分镜链路：项目脚本 / 文本素材进入分镜生成节点，分镜生成节点批量出图，故事板节点承载网格结果。
 - 视频链路：`videoGenNode` 提交批量视频任务，`videoResultNode` 展示和选择结果。
 - 场景构图：`sceneComposerNode` 作为特殊嵌入式节点，产出构图图像与提示词。
+- 资产库：左侧工具条可打开资产库，集中扫描画布中的上传图、AI 图、AI 视频、分镜和构图结果，并支持定位与下载。
+- 磁吸连接：连接点有可感知的 hover / sensing / locked 状态，释放到节点本体时也会按节点类型落到正确 handle。
 - 自动持久化：项目级快照和视口快照分开保存，桌面端走 SQLite，本地图片与视频引用做池化。
 
 ## 当前系统与旧版认知的最大区别
@@ -35,6 +37,7 @@
 4. **系统同时存在 live resolve 和 connection-time copy。** 这决定了“上游变化后下游是否自动感知”。
 5. **桌面端是主形态。** 图片生成、部分本地文件处理、SQLite、系统能力依赖 Tauri/Rust。
 6. **自动保存是系统能力，不是单个按钮。** `projectStore` 会根据整项目变更和视口变更走不同写入通道。
+7. **旧脚本上传 / LLM 节点已经不是正式节点。** `scriptUploadNode` 和 `storyboardLlmNode` 只作为历史数据兼容时丢弃，不应再作为当前链路设计依据。
 
 ## 典型工作流
 
@@ -46,14 +49,20 @@
 
 ### 剧本与分镜
 
-`scriptUploadNode -> storyboardLlmNode -> storyboardGenNode -> storyboardNode`
+`项目脚本 / textAnnotationNode -> storyboardGenNode -> storyboardNode`
 
-这条链路表达的是：上传剧本，生成镜头提示词，批量产出分镜图，最后生成故事板结果节点。
+这条链路表达的是：用户整理脚本或分镜提示词后，交给分镜生成节点批量产出网格图，最后由故事板节点承载可导出的分镜结果。
 
 ### 构图辅助
 
 `uploadNode / imageResultNode -> sceneComposerNode -> imageNode`
 
 这条链路表达的是：用户把现有图片送入 Scene Composer 做构图，再把构图 prompt 或导出的图片喂给下游图像节点。
+
+### 资产管理
+
+`canvas nodes -> Asset Library -> download / locate`
+
+这条链路表达的是：资产库不是独立文件夹，而是从当前画布节点图扫描产物。它关心节点类型、结果 variants、缩略图引用和原始媒体引用。
 
 > **📌 PM 视角：** 这个项目最重要的管理抓手不是“页面”，而是“流”和“派生”。只要一个需求会改变节点如何取上游输入、如何产出结果节点、是否需要持久化恢复，它就已经不是单纯 UI 调整。

@@ -9,6 +9,7 @@
 - `settingsStore`：用户设置与全局偏好
 
 另外还有 `themeStore`、`copilotStore` 等辅助 store，但对核心工作流的影响没有前三者大。
+`assetLibraryStore` 也属于辅助 store：它只保存资产库面板开关、分类和选择集，资产条目本身从画布节点实时扫描，不单独持久化一份媒体索引。
 
 ## `canvasStore` 管什么
 
@@ -23,6 +24,7 @@
 - 结果节点创建与归并
 - `imageResultNode` / `videoResultNode` 的选择和派生关系
 - `SceneComposer` 的连线时图片注入
+- 连接节点本体时的 handle 语义和视频首帧 / 尾帧输入关系
 
 从源码看，`canvasStore.ts` 已经不只是“存状态”，还包含不少图操作规则，因此它是理解节点行为的关键文件之一。
 
@@ -103,5 +105,6 @@
 2. `generatedResultNodeIds` 不是装饰字段，它建立了生成节点和结果节点之间的关系。
 3. `currentBatch` 不是瞬时 loading，它会影响轮询、恢复和失败状态。
 4. `scriptMd` 与 `scriptAnalysisJson` 不属于节点内部，它们是项目级资产。
+5. 资产库的 `selectedIds` 是 UI 操作态，不等于项目数据；真正的资产来源仍是节点图。
 
 > **📌 PM 视角：** 当工程师说“这个状态要进 store”，你应该马上追问三件事：它归哪个 store、是否要持久化、是否要进入历史。只要其中两项答案是“要”，这个需求就不是轻量改动了。

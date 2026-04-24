@@ -16,7 +16,7 @@
 
 ## 当前正式节点类型
 
-当前系统一共 13 种节点类型：
+当前系统一共 11 种正式节点类型：
 
 1. `uploadNode`
 2. `imageNode`
@@ -26,18 +26,17 @@
 6. `groupNode`
 7. `storyboardNode`
 8. `storyboardGenNode`
-9. `scriptUploadNode`
-10. `storyboardLlmNode`
-11. `sceneComposerNode`
-12. `videoGenNode`
-13. `videoResultNode`
+9. `sceneComposerNode`
+10. `videoGenNode`
+11. `videoResultNode`
+
+历史上出现过的 `scriptUploadNode` 和 `storyboardLlmNode` 已进入废弃列表，当前加载旧项目时会被识别为 discarded 类型，而不是正式可用节点。
 
 ## 当前节点分层理解
 
 ### 资产输入节点
 
 - `uploadNode`
-- `scriptUploadNode`
 - `textAnnotationNode`
 
 这些节点更接近“素材与说明”。
@@ -46,7 +45,6 @@
 
 - `imageNode`
 - `storyboardGenNode`
-- `storyboardLlmNode`
 - `videoGenNode`
 - `sceneComposerNode`
 
@@ -77,8 +75,6 @@
 - `imageNode`
 - `textAnnotationNode`
 - `storyboardGenNode`
-- `scriptUploadNode`
-- `storyboardLlmNode`
 - `sceneComposerNode`
 - `videoGenNode`
 
@@ -125,12 +121,17 @@
 - 节点能不能接收输入
 - 节点能不能主动拉线
 - 从某个方向拉线时，创建菜单里该出现哪些节点
+- 拖线释放到节点本体时，应该落到哪个实际 handle
 
 ## 当前系统里的特殊节点
 
 ### `sceneComposerNode`
 
 它是当前最特殊的节点之一，因为它不是纯文本 / 纯图片参数表单，而是一个嵌入式构图工具。它既会输出构图结果，也会在连线时接收上游图片快照。
+
+### `videoGenNode`
+
+它有多个语义化输入 / 输出 handle：首帧输入是 `image-first-frame`，尾帧输入是 `image-tail-frame`，结果输出是 `result-output`。因此不能把所有连接都简化成普通 `source` / `target`。
 
 ### `videoResultNode`
 
@@ -139,6 +140,10 @@
 ### `storyboardNode`
 
 它不是普通图片节点，而是一个分镜网格结果节点，带有帧列表和导出配置。
+
+### `imageResultNode`
+
+它承载图片生成批次的 `variants` 和 `selectedVariantIndex`。资产库和下游派生通常读取当前选中 variant，而不是读取生成节点上的临时字段。
 
 ## 新增一个节点为什么不是“只写个组件”
 

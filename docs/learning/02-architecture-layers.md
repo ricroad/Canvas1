@@ -64,7 +64,6 @@
 当前已经比较稳定的模块包括：
 
 - `graphImageResolver.ts`
-- `graphTextResolver.ts`
 - `graphPromptResolver.ts`
 - `toolProcessor.ts`
 - `toolDialogWorkflow.ts`
@@ -73,7 +72,7 @@
 
 这层解决的是“业务怎么做”，例如：
 
-- 如何沿边取上游图片 / 文本 / prompt
+- 如何沿边取上游图片 / prompt
 - 工具执行后如何产出新节点
 - 结果节点如何标准化创建
 - 错误如何统一报告

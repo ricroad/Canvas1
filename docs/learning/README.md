@@ -48,6 +48,8 @@
 - Web 版为什么能做项目存储和 LLM，但图片生成仍然是 desktop-only？
 - 新增一个节点类型时，为什么要同时改 `canvasNodes.ts`、`nodeRegistry.ts`、`nodes/index.ts`？
 - 为什么图片和视频结果都做成 batch + result node，而不是把结果直接塞回生成节点？
+- 资产库为什么从节点图扫描资产，而不是维护独立媒体表？
+- 磁吸连接为什么要关心具体 handle，而不只是“节点连节点”？
 
 ## 文档维护原则
 

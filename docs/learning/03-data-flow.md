@@ -33,7 +33,6 @@ Infinite Canvas 里至少有两种完全不同的数据流：
 
 这里传递的不只是图片，还可能是：
 
-- 剧本文本
 - 提示词
 - 构图 prompt
 - 结果节点的派生来源
@@ -41,10 +40,10 @@ Infinite Canvas 里至少有两种完全不同的数据流：
 
 例如：
 
-- `scriptUploadNode -> storyboardLlmNode`
 - `uploadNode -> imageNode`
 - `imageResultNode -> videoGenNode`
 - `imageResultNode -> sceneComposerNode`
+- `sceneComposerNode -> imageNode`
 
 这条流强调的是上下游依赖和节点语义。
 
@@ -55,7 +54,6 @@ Infinite Canvas 里至少有两种完全不同的数据流：
 当前源码里的典型位置：
 
 - `graphImageResolver.ts`
-- `graphTextResolver.ts`
 - `graphPromptResolver.ts`
 
 适合这种语义的场景：
@@ -66,8 +64,8 @@ Infinite Canvas 里至少有两种完全不同的数据流：
 
 典型例子：
 
-- `StoryboardLlmNode` 动态读取剧本文本
 - `imageNode` / `storyboardGenNode` 动态读取上游图片或 prompt
+- `imageNode` 动态读取上游 `sceneComposerNode.compositionPrompt`
 
 ## connection-time copy
 
@@ -76,6 +74,7 @@ Infinite Canvas 里至少有两种完全不同的数据流：
 当前最典型的例子在 `canvasStore.ts` 的 `onConnect`：
 
 - 当目标节点是 `sceneComposerNode`，且上游有主图片时，会把图片写入目标节点的 `inputImageUrl`
+- 当拖线释放到节点本体而不是精确 handle 上时，`Canvas.tsx` 会按节点类型解析默认 handle，例如 `videoGenNode` 会落到 `image-first-frame` 而不是普通 `target`
 
 这种方式更像“快照式注入”。
 
@@ -97,6 +96,19 @@ Infinite Canvas 里至少有两种完全不同的数据流：
 
 1. 生成行为和结果展示解耦了。
 2. 用户能从某个具体结果继续派生下游节点，而不是只能绑定“最后一次生成”。
+
+## 资产库的数据流
+
+资产库不是单独维护一份媒体数据库，而是每次从当前 `nodes` 扫描：
+
+- `uploadNode` 贡献上传图片
+- `imageNode` / `imageResultNode` 贡献 AI 图片
+- `videoResultNode` 贡献 AI 视频及缩略图
+- `storyboardNode` / `storyboardGenNode` 贡献分镜图
+- `sceneComposerNode` 贡献构图结果
+- `exportImageNode` 贡献导出图
+
+下载时再通过 `commands/image.ts` 调到桌面端文件能力，或在 Web fallback 下走浏览器下载。
 
 ## 为什么这会影响需求成本
 
