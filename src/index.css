@@ -1,0 +1,679 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-family-ui-default: "Noto Sans SC", "Noto Sans CJK SC", "Noto Sans CJK JP", "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, "Segoe UI", sans-serif;
+  --font-family-ui-macos: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Helvetica Neue", Arial, sans-serif;
+  --bg: #ffffff;
+  --bg-rgb: 255 255 255;
+  --surface: #f5f5f5;
+  --surface-rgb: 245 245 245;
+  --border: #e0e0e0;
+  --border-rgb: 224 224 224;
+  --text: #000000;
+  --text-rgb: 0 0 0;
+  --text-muted: #666666;
+  --text-muted-rgb: 102 102 102;
+  --accent: #3B82F6;
+  --accent-rgb: 59 130 246;
+  --ui-surface-panel: rgba(255, 255, 255, 0.96);
+  --ui-surface-field: rgba(248, 250, 252, 0.95);
+  --ui-border-soft: rgba(15, 23, 42, 0.12);
+  --ui-border-strong: rgba(15, 23, 42, 0.2);
+  --ui-shadow-panel: 0 14px 34px rgba(15, 23, 42, 0.18);
+  --group-node-bg: color-mix(in srgb, rgb(var(--accent-rgb) / 0.2) 26%, rgb(var(--surface-rgb)));
+  --ui-radius-lg: 12px;
+  --ui-radius-xl: 16px;
+  --ui-radius-2xl: 20px;
+  --node-radius: 12px;
+  --node-inner-radius: var(--node-radius);
+
+  /* ── Copilot / sidebar semantic tokens (light) ── */
+  --copilot-bg: rgba(246, 247, 249, 0.92);
+  --copilot-border: rgba(0, 0, 0, 0.08);
+  --copilot-shadow: 0 0 0 1px rgba(0,0,0,0.04), -4px 0 24px rgba(0,0,0,0.06);
+  --copilot-header-bg: rgba(255, 255, 255, 0.7);
+  --copilot-bubble-user: rgba(var(--accent-rgb) / 0.1);
+  --copilot-bubble-bot: rgba(255, 255, 255, 0.85);
+  --copilot-bubble-bot-border: rgba(0, 0, 0, 0.06);
+  --copilot-card-bg: rgba(255, 255, 255, 0.9);
+  --copilot-card-border: rgba(0, 0, 0, 0.06);
+  --copilot-card-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03);
+  --copilot-input-bg: rgba(255, 255, 255, 0.95);
+  --copilot-input-border: rgba(0, 0, 0, 0.1);
+  --copilot-input-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  --copilot-chip-bg: rgba(0, 0, 0, 0.04);
+  --copilot-chip-border: rgba(0, 0, 0, 0.06);
+  --copilot-divider: rgba(0, 0, 0, 0.06);
+  --copilot-text-primary: rgba(0, 0, 0, 0.88);
+  --copilot-text-secondary: rgba(0, 0, 0, 0.5);
+  --copilot-text-tertiary: rgba(0, 0, 0, 0.3);
+  --strip-bg: rgba(246, 247, 249, 0.88);
+  --strip-border: rgba(0, 0, 0, 0.06);
+  --strip-btn-active-bg: rgba(var(--accent-rgb) / 0.1);
+  --strip-btn-hover-bg: rgba(0, 0, 0, 0.04);
+
+  /* ── Floating pill toolbar (light) ── */
+  --strip-pill-bg: rgba(255, 255, 255, 0.78);
+  --strip-pill-border: rgba(0, 0, 0, 0.08);
+  --strip-pill-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    0 20px 48px rgba(0, 0, 0, 0.06);
+
+  /* ── Floating copilot card (light) ── */
+  --copilot-float-bg: rgba(255, 255, 255, 0.82);
+  --copilot-float-border: rgba(0, 0, 0, 0.06);
+  --copilot-float-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.05),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 16px 40px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --bg: #0f0f0f;
+  --bg-rgb: 15 15 15;
+  --surface: #1a1a1a;
+  --surface-rgb: 26 26 26;
+  --border: #2a2a2a;
+  --border-rgb: 42 42 42;
+  --text: #ffffff;
+  --text-rgb: 255 255 255;
+  --text-muted: #888888;
+  --text-muted-rgb: 136 136 136;
+  --accent-rgb: 59 130 246;
+  --ui-surface-panel: rgb(26, 26, 26);
+  --ui-surface-field: rgba(10, 10, 12, 0.92);
+  --ui-border-soft: rgba(255, 255, 255, 0.14);
+  --ui-border-strong: rgba(255, 255, 255, 0.24);
+  --ui-shadow-panel: 0 14px 34px rgba(0, 0, 0, 0.38);
+  --group-node-bg: color-mix(in srgb, rgb(var(--accent-rgb) / 0.3) 30%, black);
+  --ui-radius-lg: 12px;
+  --ui-radius-xl: 16px;
+  --ui-radius-2xl: 20px;
+  --node-radius: 12px;
+  --node-inner-radius: var(--node-radius);
+
+  /* ── Copilot / sidebar semantic tokens (dark) ── */
+  --copilot-bg: rgba(22, 22, 24, 0.92);
+  --copilot-border: rgba(255, 255, 255, 0.06);
+  --copilot-shadow: 0 0 0 1px rgba(255,255,255,0.04), -4px 0 24px rgba(0,0,0,0.3);
+  --copilot-header-bg: rgba(28, 28, 30, 0.8);
+  --copilot-bubble-user: rgba(var(--accent-rgb) / 0.12);
+  --copilot-bubble-bot: rgba(255, 255, 255, 0.05);
+  --copilot-bubble-bot-border: rgba(255, 255, 255, 0.06);
+  --copilot-card-bg: rgba(255, 255, 255, 0.04);
+  --copilot-card-border: rgba(255, 255, 255, 0.07);
+  --copilot-card-shadow: 0 1px 4px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.04);
+  --copilot-input-bg: rgba(255, 255, 255, 0.06);
+  --copilot-input-border: rgba(255, 255, 255, 0.1);
+  --copilot-input-shadow: 0 1px 6px rgba(0,0,0,0.15);
+  --copilot-chip-bg: rgba(255, 255, 255, 0.06);
+  --copilot-chip-border: rgba(255, 255, 255, 0.08);
+  --copilot-divider: rgba(255, 255, 255, 0.06);
+  --copilot-text-primary: rgba(255, 255, 255, 0.9);
+  --copilot-text-secondary: rgba(255, 255, 255, 0.5);
+  --copilot-text-tertiary: rgba(255, 255, 255, 0.25);
+  --strip-bg: rgba(22, 22, 24, 0.85);
+  --strip-border: rgba(255, 255, 255, 0.06);
+  --strip-btn-active-bg: rgba(var(--accent-rgb) / 0.15);
+  --strip-btn-hover-bg: rgba(255, 255, 255, 0.06);
+
+  /* ── Floating pill toolbar (dark) ── */
+  --strip-pill-bg: rgba(30, 30, 32, 0.72);
+  --strip-pill-border: rgba(255, 255, 255, 0.08);
+  --strip-pill-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 20px 48px rgba(0, 0, 0, 0.2);
+
+  /* ── Floating copilot card (dark) ── */
+  --copilot-float-bg: rgba(26, 26, 28, 0.78);
+  --copilot-float-border: rgba(255, 255, 255, 0.07);
+  --copilot-float-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.2),
+    0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-ui-radius='compact'] {
+  --ui-radius-lg: 10px;
+  --ui-radius-xl: 12px;
+  --ui-radius-2xl: 16px;
+  --node-radius: 10px;
+}
+
+:root[data-ui-radius='large'] {
+  --ui-radius-lg: 14px;
+  --ui-radius-xl: 20px;
+  --ui-radius-2xl: 26px;
+  --node-radius: 16px;
+}
+
+:root[data-theme-tone='warm'] {
+  --bg-rgb: 255 249 242;
+  --surface-rgb: 248 240 232;
+  --border-rgb: 226 210 190;
+  --text-rgb: 36 30 24;
+  --text-muted-rgb: 120 99 82;
+}
+
+:root.dark[data-theme-tone='warm'] {
+  --bg-rgb: 20 15 12;
+  --surface-rgb: 32 24 20;
+  --border-rgb: 64 50 42;
+  --text-rgb: 246 237 228;
+  --text-muted-rgb: 173 149 130;
+}
+
+:root[data-theme-tone='cool'] {
+  --bg-rgb: 246 250 255;
+  --surface-rgb: 236 243 252;
+  --border-rgb: 203 216 235;
+  --text-rgb: 19 30 45;
+  --text-muted-rgb: 86 105 130;
+}
+
+:root.dark[data-theme-tone='cool'] {
+  --bg-rgb: 10 16 24;
+  --surface-rgb: 17 27 39;
+  --border-rgb: 42 58 78;
+  --text-rgb: 235 244 255;
+  --text-muted-rgb: 140 163 194;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-family-ui-default);
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+#boot-screen {
+  font-family: var(--font-family-ui-default);
+}
+
+html[data-platform='macos'],
+html[data-platform='macos'] body {
+  background: transparent;
+}
+
+html[data-platform='macos'] body,
+html[data-platform='macos'] #boot-screen {
+  font-family: var(--font-family-ui-macos);
+}
+
+html[data-platform='macos'] #root {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ui-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.56) transparent;
+}
+
+.ui-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.ui-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.5);
+}
+
+.ui-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.72);
+}
+
+/* ── Copilot panel transitions ── */
+.copilot-panel-enter {
+  opacity: 0;
+  transform: translateX(20px);
+}
+.copilot-panel-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 200ms ease-out, transform 250ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.react-flow__node {
+  border-radius: 8px;
+}
+
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.react-flow__node .react-flow__handle[data-handle-connected='true'],
+.react-flow__node .react-flow__handle[data-magnetic-visible='true'] {
+  opacity: 1;
+}
+
+.magnetic-handle {
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow: visible !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  z-index: 12;
+  transform: none !important;
+  cursor: default;
+}
+
+.magnetic-handle.react-flow__handle-right {
+  top: 50% !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+}
+
+.magnetic-handle.react-flow__handle-left {
+  top: 50% !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+}
+
+.magnetic-handle.react-flow__handle-top {
+  left: 50% !important;
+  top: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translateX(-50%) !important;
+}
+
+.magnetic-handle.react-flow__handle-bottom {
+  left: 50% !important;
+  bottom: 0 !important;
+  top: auto !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+}
+
+.magnetic-handle__hit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  margin-left: -26px;
+  margin-top: -26px;
+  pointer-events: auto;
+}
+
+.magnetic-handle[data-magnetic-position='right'] .magnetic-handle__hit {
+  transform: translateX(26px);
+}
+
+.magnetic-handle[data-magnetic-position='left'] .magnetic-handle__hit {
+  transform: translateX(-26px);
+}
+
+.magnetic-handle[data-magnetic-position='top'] .magnetic-handle__hit {
+  transform: translateY(-26px);
+}
+
+.magnetic-handle[data-magnetic-position='bottom'] .magnetic-handle__hit {
+  transform: translateY(26px);
+}
+
+/* During an active connection drag, align the drop hit zone with the magnetic
+ * sensing radius so "port attracts to cursor" always implies "releasing here
+ * will connect". Size matches PORT_CONFIG.TRIGGER_RADIUS (60px) * 2. Edge
+ * geometry is unaffected: xyflow still draws the wire to the handle anchor at
+ * the card edge, which is what the user sees settle into place. */
+.magnetic-handle[data-magnetic-connecting='true'] .magnetic-handle__hit {
+  width: 120px;
+  height: 120px;
+  margin-left: -60px;
+  margin-top: -60px;
+  transform: none;
+  clip-path: circle(60px at center);
+}
+
+.magnetic-handle__visual-stack {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px));
+  transition:
+    opacity 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.magnetic-handle__surface {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+  border-radius: 9999px;
+  opacity: 0;
+  transition:
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+  transform-origin: center;
+  will-change: opacity, transform, box-shadow, border-color, background-color;
+}
+
+.magnetic-handle__surface--idle {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.08),
+    0 0 0 1px rgba(15, 23, 42, 0.02);
+  opacity: 1;
+}
+
+.magnetic-handle__surface--hover {
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 2px 12px rgba(15, 23, 42, 0.12),
+    0 0 0 2px rgba(59, 130, 246, 0.15),
+    0 0 16px rgba(59, 130, 246, 0.45);
+  transform: scale(1.25);
+  opacity: 0;
+}
+
+.magnetic-handle__glyph {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.magnetic-handle__glyph--plus {
+  transform: scale(0.9);
+}
+
+.magnetic-handle__glyph-line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 2px;
+  margin-left: -5px;
+  margin-top: -1px;
+  border-radius: 9999px;
+  background: rgb(var(--accent-rgb) / 0.92);
+}
+
+.magnetic-handle__glyph-line--vertical {
+  width: 2px;
+  height: 10px;
+  margin-left: -1px;
+  margin-top: -5px;
+}
+
+.magnetic-handle__visual-layer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.magnetic-handle[data-magnetic-position='left'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='left'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateX(-4px) scale(0.6);
+}
+
+.magnetic-handle[data-magnetic-position='right'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='right'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateX(4px) scale(0.6);
+}
+
+.magnetic-handle[data-magnetic-position='top'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='top'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateY(-4px) scale(0.6);
+}
+
+.magnetic-handle[data-magnetic-position='bottom'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='bottom'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateY(4px) scale(0.6);
+}
+
+.magnetic-handle[data-magnetic-visible='true'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer .magnetic-handle__visual-stack {
+  opacity: 1;
+}
+
+.magnetic-handle[data-magnetic-visible='true'][data-magnetic-position='left'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='left'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateX(0) scale(1);
+}
+
+.magnetic-handle[data-magnetic-visible='true'][data-magnetic-position='right'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='right'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateX(0) scale(1);
+}
+
+.magnetic-handle[data-magnetic-visible='true'][data-magnetic-position='top'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='top'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateY(0) scale(1);
+}
+
+.magnetic-handle[data-magnetic-visible='true'][data-magnetic-position='bottom'] .magnetic-handle__visual-stack,
+.magnetic-handle__visual-layer[data-magnetic-position='bottom'] .magnetic-handle__visual-stack {
+  transform: translate(var(--magnetic-offset-x, 0px), var(--magnetic-offset-y, 0px)) translateY(0) scale(1);
+}
+
+.magnetic-handle[data-magnetic-visual-state='hover'] .magnetic-handle__surface--idle,
+.magnetic-handle__visual-layer[data-magnetic-visual-state='hover'] .magnetic-handle__surface--idle,
+.magnetic-handle[data-magnetic-visual-state='dragging'] .magnetic-handle__surface--idle,
+.magnetic-handle__visual-layer[data-magnetic-visual-state='dragging'] .magnetic-handle__surface--idle {
+  opacity: 0;
+  transform: scale(0.94);
+}
+
+.magnetic-handle[data-magnetic-visual-state='hover'] .magnetic-handle__surface--hover,
+.magnetic-handle__visual-layer[data-magnetic-visual-state='hover'] .magnetic-handle__surface--hover,
+.magnetic-handle[data-magnetic-visual-state='dragging'] .magnetic-handle__surface--hover,
+.magnetic-handle__visual-layer[data-magnetic-visual-state='dragging'] .magnetic-handle__surface--hover {
+  opacity: 1;
+}
+
+.magnetic-handle[data-magnetic-visible='true'] .magnetic-handle__glyph,
+.magnetic-handle__visual-layer .magnetic-handle__glyph {
+  opacity: 0.78;
+}
+
+.magnetic-handle[data-magnetic-phase='locked'] .magnetic-handle__glyph-line,
+.magnetic-handle[data-magnetic-phase='sensing'] .magnetic-handle__glyph-line {
+  background: rgb(59, 130, 246);
+}
+
+.magnetic-handle[data-magnetic-visual-state='hover'] .magnetic-handle__glyph,
+.magnetic-handle__visual-layer[data-magnetic-visual-state='hover'] .magnetic-handle__glyph,
+.magnetic-handle[data-magnetic-visual-state='dragging'] .magnetic-handle__glyph,
+.magnetic-handle__visual-layer[data-magnetic-visual-state='dragging'] .magnetic-handle__glyph {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.magnetic-handle[data-magnetic-overlay-visible='true'] .magnetic-handle__visual-stack {
+  opacity: 0;
+}
+
+.magnetic-handle[data-magnetic-visual-state='hover'] {
+  cursor: pointer;
+}
+
+.magnetic-handle[data-magnetic-active-source='true'] {
+  cursor: grabbing;
+}
+
+.magnetic-handle__visual-layer[data-magnetic-phase='locked'][data-magnetic-validity='valid'] .magnetic-handle__surface--hover {
+  border-color: #10b981;
+  box-shadow:
+    0 0 0 2px rgb(var(--bg-rgb) / 0.9),
+    0 0 0 7px rgba(16, 185, 129, 0.18);
+}
+
+.magnetic-handle__visual-layer[data-magnetic-phase='locked'][data-magnetic-validity='valid'] .magnetic-handle__glyph-line {
+  background: #10b981;
+}
+
+.magnetic-handle__visual-layer[data-magnetic-phase='locked'][data-magnetic-validity='invalid'] .magnetic-handle__surface--hover {
+  border-color: #ef4444;
+  box-shadow:
+    0 0 0 2px rgb(var(--bg-rgb) / 0.9),
+    0 0 0 7px rgba(239, 68, 68, 0.16);
+  animation: magnetic-handle-invalid-shake 0.2s ease-in-out;
+}
+
+.magnetic-handle__visual-layer[data-magnetic-phase='locked'][data-magnetic-validity='invalid'] .magnetic-handle__glyph-line {
+  background: #ef4444;
+}
+
+@keyframes magnetic-handle-invalid-shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-2px, 0, 0);
+  }
+  75% {
+    transform: translate3d(2px, 0, 0);
+  }
+}
+
+.ui-panel {
+  background: var(--ui-surface-panel);
+  border-color: var(--ui-border-soft);
+  border-radius: var(--ui-radius-xl);
+  box-shadow: var(--ui-shadow-panel);
+}
+
+.ui-field {
+  background: var(--ui-surface-field);
+  border-color: var(--ui-border-soft);
+  border-radius: var(--ui-radius-lg);
+}
+
+.panel-anim-enter {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+
+.panel-anim-enter-active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity 160ms ease, transform 180ms ease;
+}
+
+.panel-anim-exit {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.panel-anim-exit-active {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity 130ms ease, transform 150ms ease;
+}
+
+.canvas-minimap {
+  border-radius: 12px;
+  overflow: hidden;
+  pointer-events: auto !important;
+}
+
+.canvas-minimap .react-flow__minimap-svg,
+.canvas-minimap .react-flow__minimap-mask,
+.canvas-minimap .react-flow__minimap-node {
+  pointer-events: all;
+}
+
+.react-flow__pane.selection .canvas-minimap {
+  pointer-events: auto !important;
+}
+
+.react-flow__pane.selection .canvas-minimap .react-flow__minimap-svg,
+.react-flow__pane.selection .canvas-minimap .react-flow__minimap-mask,
+.react-flow__pane.selection .canvas-minimap .react-flow__minimap-node {
+  pointer-events: all !important;
+}
+
+.canvas-minimap .react-flow__minimap-mask {
+  cursor: grab;
+  stroke: rgba(160, 160, 160, 0.92);
+  stroke-width: 1.4px;
+  fill: rgba(90, 90, 90, 0.2);
+}
+
+.canvas-minimap .react-flow__minimap-mask:active {
+  cursor: grabbing;
+}
+
+@keyframes canvas-edge-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+.canvas-processing-edge__flow {
+  animation: canvas-edge-flow 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-processing-edge__flow {
+    animation: none;
+  }
+}

@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SceneForge</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--bg:#000;--surface:#0d0d0d;--card:#161616;--card2:#1c1c1e;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.12);--text:#f5f5f7;--text2:rgba(255,255,255,.85);--dim:rgba(255,255,255,.45);--dim2:rgba(255,255,255,.3);--accent:#0a84ff;--accent2:rgba(10,132,255,.15);--green:#30d158;--amber:#ffd60a;--rose:#ff453a;--pink:#ff375f;--cyan:#64d2ff;--purple:#bf5af2;--radius:12px;--radius-sm:8px}
+  body{font-family:'Inter','Noto Sans SC',-apple-system,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+  .hdr{display:flex;align-items:center;padding:10px 20px;background:rgba(13,13,13,.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);gap:12px;z-index:10}
+  .hdr-title{font-size:13px;font-weight:600;letter-spacing:-.2px}.hdr-title span{color:var(--dim);font-weight:400;margin-left:6px}
+  .hdr-sep{width:1px;height:16px;background:var(--border2)}
+  .hdr-steps{display:flex;gap:4px;margin-left:auto}
+  .hdr-s{padding:4px 12px;font-size:11px;color:var(--dim);border-radius:20px;font-weight:500;transition:.2s}
+  .hdr-s.on{color:var(--accent);background:var(--accent2)}.hdr-s.done{color:var(--green)}
+  .main{flex:1;display:flex;overflow:hidden}
+
+  /* LEFT */
+  .lp{width:300px;min-width:300px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+  .sec{padding:16px 18px;border-bottom:1px solid var(--border)}
+  .sec-label{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px;letter-spacing:-.1px}
+  .sec-label .badge{font-size:9px;font-weight:500;color:var(--dim);background:rgba(255,255,255,.06);padding:2px 8px;border-radius:10px;margin-left:auto}
+  .text-input{width:100%;min-height:64px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:13px;resize:none;outline:0;line-height:1.6;transition:border-color .2s}
+  .text-input:focus{border-color:var(--accent)}.text-input::placeholder{color:var(--dim2)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;color:var(--dim);font-size:10px;cursor:pointer;font-family:inherit;font-weight:500;transition:.15s}
+  .tag:hover{border-color:var(--accent);color:var(--text);background:var(--accent2)}
+  .primary-btn{width:100%;padding:14px;border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;background:var(--accent);letter-spacing:-.1px;transition:.2s}
+  .primary-btn:hover{filter:brightness(1.1);box-shadow:0 4px 24px rgba(10,132,255,.35)}.primary-btn:disabled{opacity:.3;cursor:default;filter:none;box-shadow:none}
+  .primary-btn .spin{display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px}
+  .primary-btn.loading .spin{display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .ai-log{margin-top:8px;font-size:10px;color:var(--dim);line-height:1.6;max-height:60px;overflow-y:auto}
+  .ai-log .ok{color:var(--green)}.ai-log .run{color:var(--amber)}
+
+  /* OBJ LIST */
+  .obj-row{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:background .12s;margin-bottom:2px}
+  .obj-row:hover{background:rgba(255,255,255,.04)}.obj-row.sel{background:var(--accent2)}
+  .obj-row.focused{box-shadow:inset 0 0 0 1px var(--amber)}
+  .obj-color{width:10px;height:10px;border-radius:50%}
+  .obj-label-text{flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:text;padding:1px 4px;border-radius:4px}
+  .obj-label-text:hover{background:rgba(255,255,255,.05)}.obj-label-text:focus{outline:none;background:var(--card);box-shadow:0 0 0 1px var(--accent)}
+  .obj-focus{width:20px;height:20px;border:none;background:0;color:var(--dim2);cursor:pointer;border-radius:4px;font-size:10px;display:grid;place-items:center;opacity:0;transition:.15s}
+  .obj-row:hover .obj-focus{opacity:1}.obj-focus:hover{color:var(--amber)}
+  .obj-del{width:20px;height:20px;border:none;background:0;color:var(--dim2);cursor:pointer;border-radius:4px;font-size:10px;display:grid;place-items:center;opacity:0;transition:.15s}
+  .obj-row:hover .obj-del{opacity:1}.obj-del:hover{color:var(--rose)}
+  .ghost-btn{width:100%;padding:8px;border:1px dashed var(--border);background:0;color:var(--dim);border-radius:var(--radius-sm);cursor:pointer;font-size:11px;font-family:inherit;margin-top:6px;transition:.15s}
+  .ghost-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  .axis-card{padding:8px 12px;background:var(--card);border-radius:var(--radius-sm);font-size:11px;color:var(--dim);line-height:1.5}
+  .axis-card b{color:var(--amber);font-weight:500}.axis-warn{color:var(--rose);font-weight:500}
+
+  /* CAM SLIDERS with semantic labels */
+  .cam-group{display:flex;flex-direction:column;gap:10px}
+  .cam-row{display:flex;align-items:center;gap:8px}
+  .cam-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .cam-name{font-size:11px;color:var(--dim);min-width:36px;font-weight:500}
+  .cam-range{flex:1;-webkit-appearance:none;height:4px;border-radius:2px;outline:0;background:rgba(255,255,255,.08)}
+  .cam-range::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid var(--bg);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .cam-range.az::-webkit-slider-thumb{background:var(--green)}.cam-range.el::-webkit-slider-thumb{background:var(--pink)}.cam-range.di::-webkit-slider-thumb{background:var(--amber)}
+  .cam-val{font-family:'SF Mono',monospace;font-size:10px;color:var(--text2);min-width:70px;text-align:right}
+  .cam-desc{font-size:11px;color:var(--dim);padding:8px 12px;background:var(--card);border-radius:var(--radius-sm);text-align:center;margin-top:6px}
+
+  /* FOLD */
+  .fold{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:10px 18px;border-bottom:1px solid var(--border)}.fold:hover{background:rgba(255,255,255,.02)}
+  .fold span{font-size:10px;font-weight:600;color:var(--dim);letter-spacing:.3px}.fold .arr{font-size:10px;color:var(--dim2);transition:transform .2s}.fold.open .arr{transform:rotate(90deg)}
+  .fold-body{padding:14px 18px;border-bottom:1px solid var(--border);display:none}.fold-body.show{display:block}
+
+  /* VP */
+  .vp{flex:1;position:relative;background:var(--bg)}
+  #mainCanvas{width:100%;height:100%;display:block}
+  .lbl-layer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .lbl{position:absolute;padding:3px 8px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:6px;font-size:9px;color:var(--dim);white-space:nowrap;transform:translate(-50%,-100%);margin-top:-8px;font-weight:500}
+  .lbl.hl{color:var(--text);border-color:rgba(10,132,255,.4)}.lbl.focus{border-color:var(--amber);color:var(--amber)}
+  .lbl .ld{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:4px;vertical-align:middle}
+  .vp-top{position:absolute;top:12px;left:12px;display:flex;gap:6px}
+  .vp-pill{padding:5px 14px;background:rgba(0,0,0,.5);backdrop-filter:blur(12px);border:1px solid var(--border);color:var(--dim);border-radius:20px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:500}.vp-pill:hover{color:var(--text);border-color:var(--border2)}
+  .vp-tip{position:absolute;top:12px;right:12px;max-width:220px;padding:8px 12px;background:rgba(0,0,0,.5);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:10px;color:var(--dim);line-height:1.5;pointer-events:none}.vp-tip b{color:var(--text);font-weight:500}
+
+  /* RIGHT */
+  .rp{width:320px;min-width:320px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+  .preview-wrap{position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--border)}
+  #previewCanvas{display:block;max-width:100%;max-height:100%}
+  .preview-badge{position:absolute;top:8px;left:10px;display:flex;align-items:center;gap:5px;padding:3px 10px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);border-radius:20px;font-size:9px;color:var(--green);font-weight:500}
+  .preview-badge .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 1.5s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .preview-desc{position:absolute;bottom:0;left:0;right:0;padding:6px 12px;background:linear-gradient(transparent,rgba(0,0,0,.8));font-size:10px;color:var(--amber);text-align:center;font-weight:500}
+
+  .out-section{padding:14px 16px;border-bottom:1px solid var(--border)}
+  .out-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+  .out-label{font-size:10px;color:var(--dim);min-width:32px;font-weight:500}
+  .out-btn{flex:1;padding:5px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:10px;cursor:pointer;text-align:center;font-family:inherit;font-weight:500;transition:.12s}
+  .out-btn:hover{border-color:var(--accent);color:var(--text)}.out-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent2)}
+  .bg-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:.12s}.bg-dot:hover,.bg-dot.on{border-color:var(--accent);transform:scale(1.15)}
+  /* ASPECT RATIO BUTTONS */
+  .ar-row{display:flex;gap:6px;margin-bottom:10px}
+  .ar-btn{flex:1;padding:8px 4px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;text-align:center;font-family:inherit;transition:.15s;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .ar-btn:hover{border-color:var(--accent)}.ar-btn.on{border-color:var(--accent);background:var(--accent2)}
+  .ar-btn .ar-icon{border:1.5px solid currentColor;border-radius:2px;display:block}
+  .ar-btn .ar-text{font-size:9px;font-weight:600;color:var(--dim)}
+  .ar-btn.on .ar-text{color:var(--accent)}
+
+  .copy-btn{width:100%;padding:14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:-.1px;transition:.2s}
+  .copy-btn:hover{filter:brightness(1.1);box-shadow:0 4px 24px rgba(10,132,255,.35)}
+  .export-row2{display:flex;gap:6px;margin-top:8px}
+  .export-row2 .dl-btn{flex:1;margin-top:0}
+  .dl-btn{width:100%;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--dim);font-size:11px;cursor:pointer;text-align:center;font-family:inherit;font-weight:500;margin-top:6px;transition:.12s}
+  .dl-btn:hover{border-color:var(--accent);color:var(--text)}
+  .export-hint{font-size:10px;color:var(--dim2);margin-top:8px;text-align:center;line-height:1.5}
+
+  .pg{margin-bottom:8px}.pl{font-size:10px;color:var(--dim);margin-bottom:4px;font-weight:500}.pr{display:flex;gap:5px}
+  .piw{flex:1;position:relative}.piw .al{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;pointer-events:none;color:var(--dim)}
+  .pi{width:100%;padding:6px 8px 6px 20px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'SF Mono',monospace;font-size:11px;outline:0}.pi:focus{border-color:var(--accent)}
+  .json-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;font-family:'SF Mono',monospace;font-size:9px;line-height:1.5;color:var(--green);max-height:120px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:0}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+  .mo{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(20px)}.mo.h{display:none}
+  .md{background:var(--card2);border:1px solid var(--border2);border-radius:16px;padding:24px;width:320px}
+  .md h3{font-size:15px;font-weight:600;margin-bottom:14px}.md-in{width:100%;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:12px;outline:0;margin-bottom:8px}.md-in:focus{border-color:var(--accent)}
+  .tg{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+  .to{padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;text-align:center;font-size:11px;transition:.12s}.to:hover{border-color:var(--accent)}.to.sel{border-color:var(--accent);background:var(--accent2)}.to .ti{font-size:20px;margin-bottom:3px}
+  .md-a{display:flex;gap:6px;justify-content:flex-end}.md-a button{padding:8px 18px;border-radius:var(--radius-sm);font-family:inherit;font-size:12px;cursor:pointer;border:none;font-weight:500}
+  .btn-c{background:var(--card);color:var(--text)}.btn-p{background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-title">SceneForge<span>构图修正</span></div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-steps">
+    <div class="hdr-s on" id="hs1">① 描述</div>
+    <div class="hdr-s" id="hs2">② 调整</div>
+    <div class="hdr-s" id="hs3">③ 导出</div>
+  </div>
+</div>
+<div class="main">
+  <div class="lp">
+    <!-- ✅ FIX 4: Input FIRST -->
+    <div class="sec">
+      <div class="sec-label">描述你想要的画面</div>
+      <textarea class="text-input" id="instruct" placeholder="例如：两人面对面站立，中间有一张桌子&#10;主角在左侧近景，配角在右侧远处"></textarea>
+      <div class="tags">
+        <button class="tag" onclick="fillTag('两人面对面站立，中间隔一张桌子')">💬 对话</button>
+        <button class="tag" onclick="fillTag('两人并排站立')">👫 并排</button>
+        <button class="tag" onclick="fillTag('主角前景，配角远处')">📐 前后</button>
+        <button class="tag" onclick="fillTag('三人围坐桌旁，三角构图')">△ 三角</button>
+      </div>
+      <button class="primary-btn" id="goBtn" onclick="runAI()" disabled><span class="spin"></span>生成场景</button>
+      <div class="ai-log" id="aiLog"></div>
+    </div>
+    <div class="sec">
+      <!-- ✅ FIX 2: Click object = focus camera on it -->
+      <div class="sec-label">场景物体 <span class="badge">点击🎯锁定焦点</span></div>
+      <div id="objList"><div style="font-size:11px;color:var(--dim2);padding:4px 0">输入描述后自动生成</div></div>
+      <button class="ghost-btn" onclick="showModal()">+ 手动添加</button>
+    </div>
+    <div class="sec" id="axisSec">
+      <div class="sec-label">180° 轴线</div>
+      <div class="axis-card" id="axisInfo">添加两个人物后自动建立</div>
+    </div>
+    <div class="sec">
+      <!-- ✅ FIX 2: Semantic slider values -->
+      <div class="sec-label">拍摄相机</div>
+      <div class="cam-group">
+        <div class="cam-row"><div class="cam-dot" style="background:var(--green)"></div><span class="cam-name">方位</span><input class="cam-range az" type="range" id="slAz" min="-180" max="180" value="0" oninput="setCamSliders()"><span class="cam-val" id="vAz">0° 正面</span></div>
+        <div class="cam-row"><div class="cam-dot" style="background:var(--pink)"></div><span class="cam-name">俯仰</span><input class="cam-range el" type="range" id="slEl" min="-10" max="80" value="20" oninput="setCamSliders()"><span class="cam-val" id="vEl">20° 平视</span></div>
+        <div class="cam-row"><div class="cam-dot" style="background:var(--amber)"></div><span class="cam-name">距离</span><input class="cam-range di" type="range" id="slDi" min="2" max="15" step="0.1" value="6" oninput="setCamSliders()"><span class="cam-val" id="vDi">6.0 中景</span></div>
+      </div>
+      <div class="cam-desc" id="camDesc">正面 · 平视 · 中景</div>
+    </div>
+    <!-- ✅ FIX 4: Upload at BOTTOM, folded -->
+    <div class="fold" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('show')"><span>📷 参考底图</span><span class="arr">›</span></div>
+    <div class="fold-body">
+      <div style="border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:16px;text-align:center;cursor:pointer" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" accept="image/*" style="display:none"><div style="font-size:18px;opacity:.3;margin-bottom:4px">📷</div><div style="font-size:10px;color:var(--dim)">上传需修正的生成图（可选）</div>
+      </div>
+      <img id="refImgPreview" alt="参考底图" style="display:none;margin-top:10px;width:100%;border-radius:10px;border:1px solid var(--border);object-fit:contain;max-height:160px;background:#000" />
+    </div>
+  </div>
+
+  <div class="vp">
+    <canvas id="mainCanvas"></canvas>
+    <div class="lbl-layer" id="lblLayer"></div>
+    <div class="vp-top"><button class="vp-pill" onclick="resetEditorCam()">重置视角</button></div>
+    <div class="vp-tip" id="ctxTip">输入描述 → <b>生成场景</b> → 点🎯锁定焦点 → 导出</div>
+  </div>
+
+  <div class="rp">
+    <div class="preview-wrap" id="previewWrap"><canvas id="previewCanvas"></canvas><div class="preview-badge"><span class="dot"></span>实时预览</div><div class="preview-desc" id="pipDesc">—</div></div>
+    <div class="out-section">
+      <!-- ✅ FIX 3: Aspect ratio selector -->
+      <div class="out-row"><span class="out-label">画幅</span>
+        <button class="ar-btn on" onclick="setAR('9:16',this)"><span class="ar-icon" style="width:12px;height:20px"></span><span class="ar-text">9:16 竖屏</span></button>
+        <button class="ar-btn" onclick="setAR('16:9',this)"><span class="ar-icon" style="width:20px;height:12px"></span><span class="ar-text">16:9 横屏</span></button>
+        <button class="ar-btn" onclick="setAR('1:1',this)"><span class="ar-icon" style="width:16px;height:16px"></span><span class="ar-text">1:1 方图</span></button>
+      </div>
+      <div class="out-row"><span class="out-label">渲染</span><button class="out-btn on" id="rmS" onclick="setRM('standard')">彩色</button><button class="out-btn" id="rmL" onclick="setRM('silhouette')">剪影</button><span class="out-label" style="min-width:auto;margin-left:8px">背景</span><div class="bg-dot on" style="background:#000" onclick="setBg('#000',this)"></div><div class="bg-dot" style="background:#fff" onclick="setBg('#fff',this)"></div><div class="bg-dot" style="background:#555" onclick="setBg('#555',this)"></div></div>
+    </div>
+    <div class="out-section">
+      <button type="button" class="copy-btn" id="applyNodeBtn" onclick="applyToCanvasNode()">✓ 应用到画布节点</button>
+      <div class="export-row2">
+        <button type="button" class="dl-btn" id="clipboardBtn" onclick="copyImageToClipboard()">📋 复制图片</button>
+        <button type="button" class="dl-btn" id="downloadBtn" onclick="downloadImg()">⬇ 下载 PNG</button>
+      </div>
+      <div class="export-hint">主操作：将预览图与 JSON 描述同步到当前构图节点；复制/下载为可选。</div>
+    </div>
+    <div class="fold" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('show')"><span>手动微调</span><span class="arr">›</span></div>
+    <div class="fold-body" id="propPanel">
+      <div id="propEmpty" style="font-size:11px;color:var(--dim2)">在 3D 场景中点击物体</div>
+      <div id="propContent" style="display:none">
+        <div style="font-size:12px;font-weight:500;margin-bottom:8px" id="propName"></div>
+        <div class="pg"><div class="pl">位置</div><div class="pr"><div class="piw"><span class="al">X</span><input class="pi" id="pX" type="number" step="0.1" onchange="applyProp()"></div><div class="piw"><span class="al">Y</span><input class="pi" id="pY" type="number" step="0.1" onchange="applyProp()"></div><div class="piw"><span class="al">Z</span><input class="pi" id="pZ" type="number" step="0.1" onchange="applyProp()"></div></div></div>
+      </div>
+    </div>
+    <div class="fold" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('show')"><span>JSON</span><span class="arr">›</span></div>
+    <div class="fold-body"><div class="json-box" id="jsonOut">{}</div></div>
+  </div>
+</div>
+<div class="mo h" id="modal"><div class="md"><h3>添加物体</h3><input class="md-in" id="mName" placeholder="名称"><div class="tg"><div class="to sel" data-t="person" onclick="pickType(this)"><div class="ti">🧍</div>人物</div><div class="to" data-t="furniture" onclick="pickType(this)"><div class="ti">🪑</div>家具</div><div class="to" data-t="prop" onclick="pickType(this)"><div class="ti">📦</div>道具</div><div class="to" data-t="landmark" onclick="pickType(this)"><div class="ti">🏛️</div>标志物</div></div><div class="md-a"><button class="btn-c" onclick="hideModal()">取消</button><button class="btn-p" onclick="confirmAdd()">添加</button></div></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+let scene,edCam,filmCam,rMain,pipRT,pip2dCtx,pipReadBuf,pipImageData;
+let ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+let orbiting=0,panning=0,orbS={x:0,y:0};
+let sph={r:10,phi:Math.PI/3.5,th:Math.PI/6},panT=new THREE.Vector3();
+let objs=[],sel=null,hov=null,focusedObj=null; // ← NEW: focused object for camera target
+let fcGroup,fcHelper;
+let dragging=0,dPlane=new THREE.Plane(),dOff=new THREE.Vector3(),dHit=new THREE.Vector3();
+let refBg='#000',rMode='standard';
+const COLS=['#ff453a','#0a84ff','#30d158','#ffd60a','#64d2ff','#bf5af2','#ff375f','#5ac8fa'];
+let ci=0;
+let cAz=0,cEl=20,cDist=6;
+let cTarget=new THREE.Vector3(0,1,0); // ← camera target (can focus on specific object)
+// gizmo + stage zone declared in section below
+let axLine=null,axSide=1,axLast=null;
+let curAR='9:16'; // ← current aspect ratio
+
+function setStep(n){[1,2,3].forEach(i=>{const e=document.getElementById('hs'+i);e.classList.toggle('done',i<n);e.classList.toggle('on',i===n)})}
+function logAI(m,s='run'){const e=document.getElementById('aiLog');e.innerHTML+=`<div><span class="${s}">${s==='ok'?'✓':'⟳'}</span> ${m}</div>`;e.scrollTop=9999}
+
+/* ═══ FIX 2: CAMERA TARGET FOCUS ═══ */
+function focusOn(obj){
+  focusedObj=obj;
+  if(obj){
+    cTarget.copy(obj.grp.position);
+    cTarget.y=obj.type==='person'?1.2:.5;
+  } else {
+    autoLookAt();
+  }
+  updFilmCam();updObjList();
+}
+function autoLookAt(){
+  focusedObj=null;
+  if(!objs.length){cTarget.set(0,1,0);return}
+  const c=new THREE.Vector3();objs.forEach(o=>c.add(o.grp.position));c.divideScalar(objs.length);c.y=Math.max(c.y,.8);cTarget.copy(c);
+}
+
+/* ═══ CAMERA ═══ */
+function updFilmCam(){
+  const az=cAz*Math.PI/180,el=cEl*Math.PI/180,d=cDist;
+  fcGroup.position.set(cTarget.x+d*Math.cos(el)*Math.sin(az),cTarget.y+d*Math.sin(el),cTarget.z+d*Math.cos(el)*Math.cos(az));
+  fcGroup.lookAt(cTarget);filmCam.position.copy(fcGroup.position);filmCam.lookAt(cTarget);fcHelper.update();
+  updGizmo();updSliderUI();updJSON();
+  document.getElementById('camDesc').textContent=descCamCN();
+  document.getElementById('pipDesc').textContent=descCamCN();
+}
+/* ✅ FIX 2: Semantic slider labels in Chinese */
+function updSliderUI(){
+  const azN=Math.round(cAz),elN=Math.round(cEl);
+  let azL='正面';const a=((azN%360)+360)%360;if(a>=315||a<45)azL='正面';else if(a<135)azL='右侧';else if(a<225)azL='背面';else azL='左侧';
+  let elL='平视';if(elN>60)elL='鸟瞰';else if(elN>25)elL='俯拍';else if(elN>-5)elL='平视';else elL='仰拍';
+  let diL='中景';if(cDist<3.5)diL='特写';else if(cDist<7)diL='中景';else if(cDist<11)diL='全景';else diL='远景';
+  document.getElementById('slAz').value=cAz;document.getElementById('vAz').textContent=`${azN}° ${azL}`;
+  document.getElementById('slEl').value=cEl;document.getElementById('vEl').textContent=`${elN}° ${elL}`;
+  document.getElementById('slDi').value=cDist;document.getElementById('vDi').textContent=`${cDist.toFixed(1)} ${diL}`;
+}
+function setCamSliders(){cAz=+document.getElementById('slAz').value;cEl=+document.getElementById('slEl').value;cDist=+document.getElementById('slDi').value;updFilmCam()}
+function camFromPos(pos){const dx=pos.x-cTarget.x,dy=pos.y-cTarget.y,dz=pos.z-cTarget.z;cDist=Math.sqrt(dx*dx+dy*dy+dz*dz);cEl=Math.asin(dy/Math.max(cDist,.01))*180/Math.PI;cAz=Math.atan2(dx,dz)*180/Math.PI}
+function descCamCN(){
+  const a=((Math.round(cAz)%360)+360)%360;let h='正面';if(a>=315||a<45)h='正面';else if(a<135)h='右侧';else if(a<225)h='背面';else h='左侧';
+  let v='平视';if(cEl>60)v='鸟瞰';else if(cEl>25)v='俯拍';else if(cEl>-5)v='平视';else v='仰拍';
+  let d='中景';if(cDist<3.5)d='特写';else if(cDist<7)d='中景';else if(cDist<11)d='全景';else d='远景';
+  return`${h} · ${v} · ${d}`;
+}
+
+/* ═══ GIZMO + 180° STAGE ZONE ═══ */
+let stageGreen=null,stageRed=null; // two half-circles: safe side + danger side
+let orbitTrack,gElArc,gDot;
+let initialSide=null; // locked when focus is set or axis first forms
+
+function createGizmo(){
+  orbitTrack=new THREE.Mesh(new THREE.RingGeometry(1.94,2.06,80),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide,transparent:true,opacity:.06}));
+  orbitTrack.rotation.x=-Math.PI/2;scene.add(orbitTrack);
+  const pts=[];for(let i=-10;i<=85;i+=1.5){const r=i*Math.PI/180;pts.push(new THREE.Vector3(0,Math.sin(r)*2,Math.cos(r)*2))}
+  gElArc=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xff375f,transparent:true,opacity:.25}));scene.add(gElArc);
+  gDot=new THREE.Mesh(new THREE.SphereGeometry(.1,14,10),new THREE.MeshBasicMaterial({color:0xffd60a}));scene.add(gDot);
+}
+
+function ensureDualZones(){
+  if(stageGreen)return;
+  const geo=new THREE.CircleGeometry(8,48,0,Math.PI);
+  stageGreen=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x30d158,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false}));
+  stageGreen.rotation.x=-Math.PI/2;stageGreen.position.y=0.04;stageGreen.visible=false;scene.add(stageGreen);
+  stageRed=new THREE.Mesh(geo.clone(),new THREE.MeshBasicMaterial({color:0xff453a,transparent:true,opacity:.08,side:THREE.DoubleSide,depthWrite:false}));
+  stageRed.rotation.x=-Math.PI/2;stageRed.position.y=0.04;stageRed.visible=false;scene.add(stageRed);
+}
+
+function updGizmo(){
+  if(!orbitTrack)return;
+  const d=cDist,az=cAz*Math.PI/180;
+  orbitTrack.position.set(cTarget.x,cTarget.y-.3,cTarget.z);orbitTrack.scale.setScalar(d/2);
+  gElArc.position.copy(cTarget);gElArc.rotation.set(0,0,0);gElArc.rotation.y=az;gElArc.scale.setScalar(d/2);
+  gDot.position.copy(fcGroup.position);
+
+  ensureDualZones();
+  const ax=getAxisData();
+
+  if(ax && !focusedObj){
+    stageGreen.visible=true;stageRed.visible=true;
+
+    const axAngle=Math.atan2(-ax.dir.y,ax.dir.x);
+    const zoneR=Math.max(d*0.6,ax.len*1.5,4);
+    const s=zoneR/8;
+
+    // Position both at midpoint
+    [stageGreen,stageRed].forEach(z=>{
+      z.position.x=ax.mid.x;z.position.z=ax.mid.y;z.scale.setScalar(s);
+    });
+
+    // Determine camera side
+    const camV=new THREE.Vector2(fcGroup.position.x-ax.mid.x,fcGroup.position.z-ax.mid.y);
+    const cross=ax.dir.x*camV.y-ax.dir.y*camV.x;
+    const camSide=cross>=0?1:-1;
+
+    // Lock initial side on first detection
+    if(initialSide===null) initialSide=camSide;
+
+    // Green always on initialSide, Red always on opposite
+    if(initialSide>=0){
+      stageGreen.rotation.z=axAngle;        // semicircle opens toward +side
+      stageRed.rotation.z=axAngle+Math.PI;  // opposite side
+    } else {
+      stageGreen.rotation.z=axAngle+Math.PI;
+      stageRed.rotation.z=axAngle;
+    }
+
+    // If camera is on green side → safe. On red side → pulse red brighter
+    const isSafe=camSide===initialSide;
+    stageGreen.material.opacity=isSafe?.14:.08; // dim green when you've left it
+    stageRed.material.opacity=isSafe?.06:.22;   // bright red when you're on it
+
+    orbitTrack.material.opacity=.03;
+  } else {
+    stageGreen.visible=false;stageRed.visible=false;
+    orbitTrack.material.opacity=.06;
+  }
+}
+
+function getPersons(){return objs.filter(o=>o.type==='person')}
+function getAxisData(){const p=getPersons();if(p.length<2)return null;const a=p[0],b=p[1],pA=new THREE.Vector2(a.grp.position.x,a.grp.position.z),pB=new THREE.Vector2(b.grp.position.x,b.grp.position.z);const dir=pB.clone().sub(pA).normalize();return{a,b,pA,pB,mid:pA.clone().add(pB).multiplyScalar(.5),dir,normal:new THREE.Vector2(-dir.y,dir.x),len:pA.distanceTo(pB)}}
+function updAxis(){
+  if(axLine){scene.remove(axLine);axLine=null}
+  const ax=getAxisData(),info=document.getElementById('axisInfo');
+  if(!ax){info.textContent='添加两个人物后自动建立';initialSide=null;updGizmo();return}
+  // Axis line (dashed yellow)
+  const ext=ax.len*1.8;axLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(ax.pA.x-ax.dir.x*ext,.02,ax.pA.y-ax.dir.y*ext),new THREE.Vector3(ax.pB.x+ax.dir.x*ext,.02,ax.pB.y+ax.dir.y*ext)]),new THREE.LineDashedMaterial({color:0xffd60a,dashSize:.35,gapSize:.2,transparent:true,opacity:.3}));axLine.computeLineDistances();scene.add(axLine);
+  // Camera side
+  const cp=new THREE.Vector2(fcGroup.position.x,fcGroup.position.z).sub(ax.mid);
+  const side=cp.dot(ax.normal);axSide=side>=0?1:-1;
+  // Check crossing
+  const camV=new THREE.Vector2(fcGroup.position.x-ax.mid.x,fcGroup.position.z-ax.mid.y);
+  const cross=ax.dir.x*camV.y-ax.dir.y*camV.x;
+  const camSide=cross>=0?1:-1;
+  if(initialSide===null)initialSide=camSide;
+  const isSafe=camSide===initialSide;
+  const crossed=!isSafe;
+  info.innerHTML=`<b>轴线</b> ${ax.a.name} ↔ ${ax.b.name}　相机: ${axSide>=0?'左':'右'}侧${crossed?' <span class="axis-warn">⚠ 越轴！左右位置已反转</span>':''}`;
+  axLast=axSide;updGizmo();
+}
+
+/* ═══ ASPECT RATIO ═══ */
+function setAR(ar,btn){
+  curAR=ar;document.querySelectorAll('.ar-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  resizePip();
+}
+function getARDims(baseW){
+  if(curAR==='9:16')return{w:baseW,h:Math.round(baseW*16/9)};
+  if(curAR==='16:9')return{w:baseW,h:Math.round(baseW*9/16)};
+  return{w:baseW,h:baseW};
+}
+function resizePip(){
+  const wrap=document.getElementById('previewWrap');
+  const maxW=wrap.clientWidth||320;
+  const dims=getARDims(maxW);
+  let w=dims.w,h=dims.h;
+  const maxH=400;
+  if(h>maxH){w=Math.round(maxH*w/h);h=maxH}
+  if(pipRT)pipRT.setSize(w,h);
+  const cv=document.getElementById('previewCanvas');
+  cv.width=w;cv.height=h;
+  cv.style.width=w+'px';cv.style.height=h+'px';
+  pipImageData=null;
+  filmCam.aspect=w/h;filmCam.updateProjectionMatrix();fcHelper.update();
+}
+function blitFilmPipToPreview(){
+  if(!pipRT||!pip2dCtx)return;
+  const w=pipRT.width,h=pipRT.height;
+  if(w<2||h<2)return;
+  const need=w*h*4;
+  if(!pipReadBuf||pipReadBuf.length!==need)pipReadBuf=new Uint8Array(need);
+  rMain.readRenderTargetPixels(pipRT,0,0,w,h,pipReadBuf);
+  if(!pipImageData||pipImageData.width!==w||pipImageData.height!==h)pipImageData=pip2dCtx.createImageData(w,h);
+  const d=pipImageData.data;
+  for(let y=0;y<h;y++){
+    const src=(h-1-y)*w*4,dst=y*w*4;
+    for(let i=0;i<w*4;i++)d[dst+i]=pipReadBuf[src+i];
+  }
+  pip2dCtx.putImageData(pipImageData,0,0);
+}
+
+/* ═══ NOTIFY PARENT (postMessage to React node) ═══ */
+function buildSceneData(){
+  return {
+    camera:{azimuth:Math.round(cAz),elevation:Math.round(cEl),distance:+cDist.toFixed(1),description:descCamCN(),target:[+cTarget.x.toFixed(2),+cTarget.y.toFixed(2),+cTarget.z.toFixed(2)]},
+    aspect_ratio:curAR,
+    objects:objs.map(o=>({name:o.name,type:o.type,position:[+o.grp.position.x.toFixed(2),+o.grp.position.y.toFixed(2),+o.grp.position.z.toFixed(2)]}))
+  };
+}
+function buildPromptText(sd){
+  const cam=sd.camera;
+  let prompt=`构图参考：${cam.description}，画幅 ${sd.aspect_ratio}。`;
+  const persons=sd.objects.filter(o=>o.type==='person');
+  const others=sd.objects.filter(o=>o.type!=='person');
+  if(persons.length)prompt+=`\n人物：${persons.map(p=>p.name+'('+p.position.join(',')+')').join('、')}。`;
+  if(others.length)prompt+=`\n物体：${others.map(p=>p.name+'['+p.type+']('+p.position.join(',')+')').join('、')}。`;
+  return prompt;
+}
+function notifyParent(imageDataUrl){
+  if(!window.parent||window.parent===window)return;
+  const sd=buildSceneData();
+  window.parent.postMessage({type:'sceneforge:export',imageDataUrl,sceneJson:sd,prompt:buildPromptText(sd)},'*');
+}
+
+/* ═══ EXPORT ═══ */
+function exportCompositionCanvas1024(){
+  const dims=getARDims(1024);
+  const off=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});off.setSize(dims.w,dims.h);off.shadowMap.enabled=false;
+  const pb=scene.background;scene.background=new THREE.Color(refBg);
+  const hide=[fcGroup,fcHelper,orbitTrack,stageGreen,stageRed,gElArc,gDot,axLine].filter(Boolean);
+  const was=hide.map(o=>o.visible);hide.forEach(o=>o.visible=false);
+  objs.forEach(o=>o.grp.traverse(c=>{if(c.userData._ring)c.visible=false}));
+  filmCam.aspect=dims.w/dims.h;filmCam.updateProjectionMatrix();
+  off.render(scene,filmCam);
+  const cv=document.createElement('canvas');cv.width=dims.w;cv.height=dims.h;const ctx=cv.getContext('2d');ctx.drawImage(off.domElement,0,0);
+  ctx.font=`600 ${Math.round(dims.h*.018)}px Inter,"Noto Sans SC",sans-serif`;ctx.textAlign='center';
+  objs.forEach(o=>{
+    const ty=o.type==='person'?1.65:o.type==='furniture'?1.05:o.type==='landmark'?2:.7;
+    const lp=o.grp.position.clone();lp.y+=ty;const v=lp.project(filmCam);if(v.z>1)return;
+    const sx=(v.x*.5+.5)*dims.w,sy=(-v.y*.5+.5)*dims.h,tm=ctx.measureText(o.name);
+    ctx.fillStyle='rgba(0,0,0,0.6)';ctx.beginPath();ctx.roundRect(sx-tm.width/2-6,sy-dims.h*.022,tm.width+12,dims.h*.026,5);ctx.fill();
+    ctx.fillStyle=o.color;ctx.fillText(o.name,sx,sy-4);
+  });
+  scene.background=pb;hide.forEach((o,i)=>o.visible=was[i]);objs.forEach(o=>o.grp.traverse(c=>{if(c.userData._ring)c.visible=true}));
+  filmCam.aspect=pipRT.width/pipRT.height;filmCam.updateProjectionMatrix();
+  off.dispose();
+  return cv;
+}
+function applyToCanvasNode(){
+  const cv=exportCompositionCanvas1024();
+  notifyParent(cv.toDataURL('image/png'));
+  const b=document.getElementById('applyNodeBtn');
+  if(b){b.textContent='✅ 已同步到节点';setTimeout(()=>{b.textContent='✓ 应用到画布节点';},2200);}
+  setStep(3);
+}
+async function copyImageToClipboard(){
+  const cv=exportCompositionCanvas1024();
+  try{
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+    const b=document.getElementById('clipboardBtn');
+    if(b){b.textContent='✅ 已复制';setTimeout(()=>{b.textContent='📋 复制图片';},2000);}
+  }catch(e){
+    console.warn('Clipboard failed',e);
+    const b=document.getElementById('clipboardBtn');
+    if(b){b.textContent='复制失败';setTimeout(()=>{b.textContent='📋 复制图片';},2000);}
+  }
+}
+function downloadImg(){
+  const dims=getARDims(1024);
+  const off=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});off.setSize(dims.w,dims.h);
+  const pb=scene.background;scene.background=new THREE.Color(refBg);
+  [fcGroup,fcHelper,orbitTrack,stageGreen,stageRed,gElArc,gDot,axLine].filter(Boolean).forEach(o=>o.visible=false);
+  objs.forEach(o=>o.grp.traverse(c=>{if(c.userData._ring)c.visible=false}));
+  filmCam.aspect=dims.w/dims.h;filmCam.updateProjectionMatrix();off.render(scene,filmCam);
+  const link=document.createElement('a');link.download=`sceneforge_${curAR.replace(':','x')}.png`;link.href=off.domElement.toDataURL('image/png');link.click();
+  scene.background=pb;[fcGroup,fcHelper,orbitTrack,stageGreen,stageRed,gElArc,gDot,axLine].filter(Boolean).forEach(o=>o.visible=true);
+  objs.forEach(o=>o.grp.traverse(c=>{if(c.userData._ring)c.visible=true}));
+  filmCam.aspect=pipRT.width/pipRT.height;filmCam.updateProjectionMatrix();off.dispose();
+  const b=document.getElementById('downloadBtn');
+  if(b){b.textContent='✅ 已下载';setTimeout(()=>{b.textContent='⬇ 下载 PNG';},1500);}
+}
+
+/* ═══ INIT ═══ */
+function init(){
+  const mc=document.getElementById('mainCanvas'),pc=document.getElementById('previewCanvas'),w=mc.parentElement;
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x000000);
+  edCam=new THREE.PerspectiveCamera(50,w.clientWidth/w.clientHeight,.1,500);
+  filmCam=new THREE.PerspectiveCamera(50,9/16,.1,200); // ← default 9:16!
+  fcGroup=new THREE.Group();scene.add(fcGroup);
+  /* ✅ FIX 1: Camera uses MeshBasicMaterial too */
+  const cb=new THREE.Mesh(new THREE.BoxGeometry(.4,.28,.5),new THREE.MeshBasicMaterial({color:0x3a3a3c,transparent:true,opacity:.9}));
+  const cbE=new THREE.LineSegments(new THREE.EdgesGeometry(cb.geometry),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.5}));cb.add(cbE);fcGroup.add(cb);
+  const lens=new THREE.Mesh(new THREE.CylinderGeometry(.09,.12,.22,10),new THREE.MeshBasicMaterial({color:0x0a84ff,transparent:true,opacity:.8}));lens.rotation.x=Math.PI/2;lens.position.z=-.36;fcGroup.add(lens);
+  fcHelper=new THREE.CameraHelper(filmCam);fcHelper.material.opacity=.15;fcHelper.material.transparent=true;scene.add(fcHelper);
+  createGizmo();updEdCam();updFilmCam();
+
+  // ✅ FIX 1: Dark grid, no shadows, basic lighting only
+  scene.add(new THREE.GridHelper(20,20,0x222222,0x111111));
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(20,20),new THREE.MeshBasicMaterial({color:0x0a0a0a}));fl.rotation.x=-Math.PI/2;fl.position.y=-.01;scene.add(fl);
+  scene.add(new THREE.AmbientLight(0xffffff,1)); // bright ambient only
+
+  rMain=new THREE.WebGLRenderer({canvas:mc,antialias:true});rMain.setSize(w.clientWidth,w.clientHeight);rMain.setPixelRatio(Math.min(devicePixelRatio,2));
+  pipRT=new THREE.WebGLRenderTarget(1,1,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true,stencilBuffer:false});
+  pip2dCtx=pc.getContext('2d',{alpha:false});
+  resizePip();
+
+  mc.addEventListener('mousedown',onDown);mc.addEventListener('mousemove',onMove);mc.addEventListener('mouseup',onUp);
+  mc.addEventListener('wheel',onWheel);mc.addEventListener('contextmenu',e=>e.preventDefault());
+  window.addEventListener('resize',onResize);window.addEventListener('keydown',onKey);
+  document.getElementById('fileInput').addEventListener('change',onFile);
+  document.getElementById('instruct').addEventListener('input',updGoBtn);
+  animate();
+}
+
+function updEdCam(){const{r,phi,th}=sph;edCam.position.set(r*Math.sin(phi)*Math.sin(th)+panT.x,r*Math.cos(phi)+panT.y,r*Math.sin(phi)*Math.cos(th)+panT.z);edCam.lookAt(panT)}
+function resetEditorCam(){sph={r:10,phi:Math.PI/3.5,th:Math.PI/6};panT.set(0,0,0);updEdCam()}
+
+/* ═══ MOUSE ═══ */
+function mp(e){const c=rMain.domElement,r=c.getBoundingClientRect();return{x:((e.clientX-r.left)/r.width)*2-1,y:-((e.clientY-r.top)/r.height)*2+1}}
+function pickable(){const l=[];fcGroup.traverse(c=>{if(c.isMesh)l.push(c)});if(gDot)l.push(gDot);objs.forEach(o=>o.grp.traverse(c=>{if(c.isMesh&&!c.userData._ring&&!c.userData._edge)l.push(c)}));return l}
+function ownerOf(m){let fc=0;fcGroup.traverse(c=>{if(c===m)fc=1});if(fc||m===gDot)return'cam';for(const o of objs){let f=0;o.grp.traverse(c=>{if(c===m)f=1});if(f)return o}return null}
+
+function onDown(e){
+  const p=mp(e);mouse.set(p.x,p.y);
+  if(e.button===0){
+    ray.setFromCamera(mouse,edCam);const hits=ray.intersectObjects(pickable(),false);
+    if(hits.length){
+      const ow=ownerOf(hits[0].object);
+      if(ow==='cam'){select(null);dPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,1,0),fcGroup.position);ray.ray.intersectPlane(dPlane,dHit);dOff.copy(fcGroup.position).sub(dHit);dragging='cam';rMain.domElement.style.cursor='grabbing';return}
+      if(ow&&typeof ow==='object'){select(ow);dPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0,1,0),ow.grp.position);ray.ray.intersectPlane(dPlane,dHit);dOff.copy(ow.grp.position).sub(dHit);dragging='obj';rMain.domElement.style.cursor='grabbing';return}
+    }
+    select(null);orbiting=1;orbS={x:e.clientX,y:e.clientY};
+  } else if(e.button===2){panning=1;orbS={x:e.clientX,y:e.clientY}}
+}
+function onMove(e){
+  if(dragging==='cam'){const p=mp(e);mouse.set(p.x,p.y);ray.setFromCamera(mouse,edCam);ray.ray.intersectPlane(dPlane,dHit);camFromPos(dHit.clone().add(dOff));cDist=Math.max(2,Math.min(15,cDist));cEl=Math.max(-10,Math.min(80,cEl));updFilmCam();updAxis();return}
+  if(dragging==='obj'&&sel){const p=mp(e);mouse.set(p.x,p.y);ray.setFromCamera(mouse,edCam);ray.ray.intersectPlane(dPlane,dHit);sel.grp.position.copy(dHit.clone().add(dOff));if(focusedObj===sel)cTarget.copy(sel.grp.position).setY(sel.type==='person'?1.2:.5);if(!focusedObj)autoLookAt();updFilmCam();updAxis();refreshProps();return}
+  if(orbiting){const dx=(e.clientX-orbS.x)*.005,dy=(e.clientY-orbS.y)*.005;sph.th-=dx;sph.phi=Math.max(.1,Math.min(Math.PI-.1,sph.phi+dy));orbS={x:e.clientX,y:e.clientY};updEdCam()}
+  if(panning){const dx=(e.clientX-orbS.x)*.01,dy=(e.clientY-orbS.y)*.01;const r=new THREE.Vector3();r.crossVectors(edCam.getWorldDirection(new THREE.Vector3()),new THREE.Vector3(0,1,0)).normalize();panT.addScaledVector(r,-dx);panT.y+=dy;orbS={x:e.clientX,y:e.clientY};updEdCam()}
+  if(!dragging&&!orbiting&&!panning){const p=mp(e);mouse.set(p.x,p.y);ray.setFromCamera(mouse,edCam);const h=ray.intersectObjects(pickable(),false);const nh=h.length?ownerOf(h[0].object):null;if(nh!==hov){if(hov&&typeof hov==='object')hov.grp.traverse(c=>{if(c.userData._gm){c.material=c.userData._om;delete c.userData._gm}});hov=nh;if(hov&&typeof hov==='object'&&hov!==sel)hov.grp.traverse(c=>{if(c.isMesh&&!c.userData._ring&&!c.userData._edge){c.userData._om=c.material;c.userData._gm=1;c.material=c.material.clone();c.material.opacity=1}})}rMain.domElement.style.cursor=h.length?'grab':'default'}
+}
+function onUp(){dragging=0;orbiting=0;panning=0;rMain.domElement.style.cursor='default';if(hov&&typeof hov==='object')hov.grp.traverse(c=>{if(c.userData._gm){c.material=c.userData._om;delete c.userData._gm}});hov=null}
+function onWheel(e){sph.r*=(1+e.deltaY*.001);sph.r=Math.max(2,Math.min(40,sph.r));updEdCam()}
+function onKey(e){if((e.key==='Delete'||e.key==='Backspace')&&sel)removeObj(sel)}
+
+/* ═══ SELECT ═══ */
+function select(o){if(sel)sel.grp.traverse(c=>{if(c.userData._ring)c.material.opacity=0});sel=o;if(o)o.grp.traverse(c=>{if(c.userData._ring)c.material.opacity=.6});refreshProps();updObjList()}
+function refreshProps(){
+  const ct=document.getElementById('propContent'),em=document.getElementById('propEmpty');
+  if(!sel){ct.style.display='none';em.style.display='';return}ct.style.display='';em.style.display='none';
+  document.getElementById('propName').textContent=sel.name;const p=sel.grp.position;
+  document.getElementById('pX').value=p.x.toFixed(1);document.getElementById('pY').value=p.y.toFixed(1);document.getElementById('pZ').value=p.z.toFixed(1);
+}
+function applyProp(){if(!sel)return;sel.grp.position.set(+document.getElementById('pX').value||0,+document.getElementById('pY').value||0,+document.getElementById('pZ').value||0);if(focusedObj===sel)cTarget.copy(sel.grp.position).setY(sel.type==='person'?1.2:.5);if(!focusedObj)autoLookAt();updFilmCam();updAxis()}
+
+/* ═══ FIX 1: HIGH CONTRAST PROXY OBJECTS ═══ */
+function mkProxy(geo,color,yOff){
+  const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:.85});
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.y=yOff;
+  // White edge wireframe
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.6}));
+  edges.userData._edge=1;
+  mesh.add(edges);
+  return mesh;
+}
+function mkPerson(c){
+  const g=new THREE.Group();
+  // Body capsule (cylinder + sphere top)
+  g.add(mkProxy(new THREE.CylinderGeometry(.22,.18,.95,8),c,.68));
+  g.add(mkProxy(new THREE.SphereGeometry(.18,10,8),c,1.35));
+  // Direction cone (white)
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.06,.12,6),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.9}));
+  nose.position.set(0,1.35,.2);nose.rotation.x=Math.PI/2;g.add(nose);
+  return g;
+}
+function mkFurni(c){const g=new THREE.Group();g.add(mkProxy(new THREE.BoxGeometry(.7,.7,.7),c,.35));return g}
+function mkProp(c){const g=new THREE.Group();g.add(mkProxy(new THREE.SphereGeometry(.25,10,8),c,.25));return g}
+function mkLand(c){const g=new THREE.Group();g.add(mkProxy(new THREE.CylinderGeometry(.1,.3,1.6,6),c,.8));return g}
+
+function addObj(name,type,pos){
+  const col=new THREE.Color(COLS[ci%COLS.length]),hex=COLS[ci%COLS.length];ci++;
+  let grp;switch(type){case'person':grp=mkPerson(col);break;case'furniture':grp=mkFurni(col);break;case'prop':grp=mkProp(col);break;default:grp=mkLand(col)}
+  if(pos)grp.position.set(pos.x,pos.y,pos.z);
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.4,.46,32),new THREE.MeshBasicMaterial({color:hex,side:THREE.DoubleSide,transparent:true,opacity:0}));ring.rotation.x=-Math.PI/2;ring.position.y=.01;ring.userData._ring=1;grp.add(ring);
+  scene.add(grp);const o={id:Date.now()+Math.random(),name,type,color:hex,grp};objs.push(o);updObjList();if(!focusedObj)autoLookAt();updFilmCam();updAxis();return o;
+}
+function removeObj(o){scene.remove(o.grp);objs=objs.filter(x=>x.id!==o.id);if(sel===o)select(null);if(focusedObj===o)focusOn(null);updObjList();if(!focusedObj)autoLookAt();updFilmCam();updAxis()}
+
+/* ═══ FIX 2: OBJ LIST with focus button ═══ */
+function updObjList(){
+  const el=document.getElementById('objList');
+  if(!objs.length){el.innerHTML='<div style="font-size:11px;color:var(--dim2);padding:4px 0">输入描述后自动生成</div>';return}
+  let h='';objs.forEach(o=>{
+    const isFocused=focusedObj===o;
+    h+=`<div class="obj-row ${sel===o?'sel':''} ${isFocused?'focused':''}" onclick="selById(${o.id})">
+      <div class="obj-color" style="background:${o.color}"></div>
+      <span class="obj-label-text" contenteditable="true" spellcheck="false" onclick="event.stopPropagation()" onblur="commitName(${o.id},this)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${o.name}</span>
+      <button class="obj-focus" onclick="event.stopPropagation();toggleFocus(${o.id})" title="锁定焦点">${isFocused?'🎯':'◎'}</button>
+      <button class="obj-del" onclick="event.stopPropagation();rmById(${o.id})">✕</button>
+    </div>`;
+  });el.innerHTML=h;
+}
+function selById(id){const o=objs.find(x=>x.id===id);if(o)select(o)}
+function rmById(id){const o=objs.find(x=>x.id===id);if(o)removeObj(o)}
+function toggleFocus(id){const o=objs.find(x=>x.id===id);if(!o)return;focusOn(focusedObj===o?null:o)}
+function commitName(id,el){const o=objs.find(x=>x.id===id);if(!o)return;const v=(el.textContent||'').trim();if(v&&v!==o.name){o.name=v;updJSON();if(sel===o)refreshProps()}else el.textContent=o.name}
+
+/* ═══ LAYOUT ENGINE ═══ */
+const LP=[{m:/面对面|对面|对话|聊天|对手/,l:'ff'},{m:/并排|并肩|并列/,l:'ss'},{m:/三角|围坐|围着|三人/,l:'tri'},{m:/前后|前景.*后|背后|跟随/,l:'fb'},{m:/互换|换位|交换/,l:'swap'},{m:/左边|左侧|画面左/,l:'ml'},{m:/右边|右侧|画面右/,l:'mr'},{m:/远处|远景/,l:'mf'},{m:/近处|近景|前面/,l:'mn'},{m:/中间|居中/,l:'ctr'}];
+function extractObjs(t){const r=[];[[/女主角|女主/g,'女主角'],[/男主角|男主/g,'男主角'],[/主角/g,'主角'],[/配角/g,'配角']].forEach(([re,n])=>{if(re.test(t)&&!r.find(x=>x.name===n))r.push({name:n,type:'person'})});const ab=t.match(/角色\s*([A-Z])/g);if(ab)ab.forEach(m=>r.push({name:'角色'+m.replace(/角色\s*/,''),type:'person'}));['桌子','沙发','椅子'].forEach(w=>{if(t.includes(w))r.push({name:w,type:'furniture'})});['窗户','路灯','树'].forEach(w=>{if(t.includes(w))r.push({name:w,type:'landmark'})});const ps=r.filter(x=>x.type==='person');if(!ps.length){r.unshift({name:'角色B',type:'person'});r.unshift({name:'角色A',type:'person'})}else if(ps.length===1&&(/两人|面对面|对话/.test(t)))r.push({name:'角色B',type:'person'});return r}
+function layout(type,os){const ps=os.filter(o=>o.type==='person'),ot=os.filter(o=>o.type!=='person'),r=[],cam={az:0,el:20,dist:6};switch(type){case'ff':ps.forEach((p,i)=>r.push({...p,x:i?1.8:-1.8,y:0,z:0}));ot.forEach((o,i)=>r.push({...o,x:0,y:0,z:-.5-i}));cam.az=0;cam.el=18;cam.dist=6;break;case'ss':ps.forEach((p,i)=>r.push({...p,x:(i-(ps.length-1)/2)*1.2,y:0,z:0}));ot.forEach((o,i)=>r.push({...o,x:2+i,y:0,z:-1}));cam.dist=5;break;case'tri':{const pos=[[-1.5,0,.8],[1.5,0,.8],[0,0,-1.5]];ps.forEach((p,i)=>r.push({...p,x:pos[i%3][0],y:0,z:pos[i%3][2]}));ot.forEach(o=>r.push({...o,x:0,y:0,z:0}));cam.az=25;cam.el=30;cam.dist=7;break}case'fb':ps.forEach((p,i)=>r.push({...p,x:i*.6-.3,y:0,z:i?-2:1}));ot.forEach((o,i)=>r.push({...o,x:2,y:0,z:-1-i}));cam.az=25;break;case'swap':ps.forEach((p,i)=>r.push({...p,x:i?-1.8:1.8,y:0,z:0}));ot.forEach((o,i)=>r.push({...o,x:0,y:0,z:-.5-i}));break;case'ml':ps.forEach((p,i)=>r.push({...p,x:-2-i,y:0,z:i*.5}));ot.forEach((o,i)=>r.push({...o,x:1+i,y:0,z:-1}));cam.az=-20;break;case'mr':ps.forEach((p,i)=>r.push({...p,x:2+i,y:0,z:i*.5}));ot.forEach((o,i)=>r.push({...o,x:-1-i,y:0,z:-1}));cam.az=20;break;case'mf':ps.forEach((p,i)=>r.push({...p,x:(i-.5)*2,y:0,z:-3}));ot.forEach(o=>r.push({...o,x:0,y:0,z:-1}));cam.el=25;cam.dist=8;break;case'mn':ps.forEach((p,i)=>r.push({...p,x:(i-.5)*1.5,y:0,z:2}));ot.forEach(o=>r.push({...o,x:0,y:0,z:-1}));cam.dist=5;break;default:ps.forEach((p,i)=>r.push({...p,x:i?1.8:-1.8,y:0,z:0}));ot.forEach((o,i)=>r.push({...o,x:0,y:0,z:-.5-i}))}const dm={ff:'两人面对面',ss:'并排站立',tri:'三角构图',fb:'前后站位',swap:'左右互换',ml:'移至左侧',mr:'移至右侧',mf:'远景',mn:'近景',ctr:'居中'};return{objects:r,camera:cam,description:dm[type]||'自动布局'}}
+
+async function runAI(){const ins=document.getElementById('instruct').value.trim();if(!ins)return;const btn=document.getElementById('goBtn');btn.disabled=1;btn.classList.add('loading');document.getElementById('aiLog').innerHTML='';[...objs].forEach(o=>removeObj(o));ci=0;axLast=null;focusedObj=null;logAI('分析指令…');await new Promise(r=>setTimeout(r,250));let lt='ff';for(const p of LP)if(p.m.test(ins)){lt=p.l;break}const os=extractObjs(ins),res=layout(lt,os);logAI(`${res.description} · ${res.objects.length} 个物体`,'ok');await new Promise(r=>setTimeout(r,200));res.objects.forEach(o=>addObj(o.name,o.type,new THREE.Vector3(o.x,o.y,o.z)));if(res.camera){cAz=res.camera.az||0;cEl=res.camera.el||20;cDist=res.camera.dist||6}autoLookAt();updFilmCam();updAxis();setStep(2);document.getElementById('ctxTip').innerHTML='✅ 已生成 — 点🎯锁定人物焦点 · 拖滑块调机位 · 右侧<b>应用到画布节点</b>';btn.disabled=0;btn.classList.remove('loading');updGoBtn()}
+
+/* ═══ UTILS ═══ */
+function onFile(e){
+  const f=e.target.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>setInputImage(ev.target.result);
+  r.readAsDataURL(f);
+}
+
+function setInputImage(dataUrl){
+  const img=document.getElementById('refImgPreview');
+  if(!img)return;
+  if(!dataUrl){img.style.display='none';img.removeAttribute('src');return;}
+  img.src=dataUrl;img.style.display='';
+}
+
+window.addEventListener('message',(event)=>{
+  if(!event?.data) return;
+  if(event.data.type==='sceneforge:setInputImage'){
+    setInputImage(event.data.imageDataUrl||null);
+  }
+});
+function updGoBtn(){document.getElementById('goBtn').disabled=!document.getElementById('instruct').value.trim()}
+function fillTag(t){document.getElementById('instruct').value=t;updGoBtn()}
+function setRM(m){rMode=m;document.getElementById('rmS').classList.toggle('on',m==='standard');document.getElementById('rmL').classList.toggle('on',m==='silhouette')}
+function setBg(c,el){refBg=c;document.querySelectorAll('.bg-dot').forEach(s=>s.classList.remove('on'));el.classList.add('on')}
+function updJSON(){const j={camera:{azimuth:Math.round(cAz),elevation:Math.round(cEl),distance:+cDist.toFixed(1),description:descCamCN(),target:[+cTarget.x.toFixed(2),+cTarget.y.toFixed(2),+cTarget.z.toFixed(2)]},aspect_ratio:curAR,objects:objs.map(o=>({name:o.name,type:o.type,position:[+o.grp.position.x.toFixed(2),+o.grp.position.y.toFixed(2),+o.grp.position.z.toFixed(2)]}))};document.getElementById('jsonOut').textContent=JSON.stringify(j,null,2)}
+function updateLabels(){const L=document.getElementById('lblLayer'),c=rMain.domElement,w=c.clientWidth,h=c.clientHeight;let html='';function ts(p){const v=p.clone().project(edCam);return{x:(v.x*.5+.5)*w,y:(-v.y*.5+.5)*h,b:v.z>1}}const cs=ts(fcGroup.position);if(!cs.b)html+=`<div class="lbl" style="left:${cs.x}px;top:${cs.y-14}px;color:var(--accent);border-color:rgba(10,132,255,.3)">🎥</div>`;objs.forEach(o=>{const ty=o.type==='person'?1.55:o.type==='furniture'?.95:o.type==='landmark'?1.9:.65;const lp=o.grp.position.clone();lp.y+=ty;const s=ts(lp);if(s.b)return;const cl=sel===o?'hl':focusedObj===o?'focus':'';html+=`<div class="lbl ${cl}" style="left:${s.x}px;top:${s.y}px"><span class="ld" style="background:${o.color}"></span>${o.name}${focusedObj===o?' 🎯':''}</div>`});L.innerHTML=html}
+function onResize(){const w=document.getElementById('mainCanvas').parentElement;edCam.aspect=w.clientWidth/w.clientHeight;edCam.updateProjectionMatrix();rMain.setSize(w.clientWidth,w.clientHeight);resizePip()}
+function showModal(){document.getElementById('modal').classList.remove('h');document.getElementById('mName').focus()}
+function hideModal(){document.getElementById('modal').classList.add('h');document.getElementById('mName').value=''}
+let mType='person';function pickType(el){document.querySelectorAll('.to').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');mType=el.dataset.t}
+function confirmAdd(){const n=document.getElementById('mName').value.trim()||`物体${objs.length+1}`;addObj(n,mType,new THREE.Vector3((objs.length%3-1)*2,0,Math.floor(objs.length/3)*2));hideModal()}
+
+function animate(){requestAnimationFrame(animate);const t=Date.now()*.003;objs.forEach(o=>o.grp.traverse(c=>{if(c.userData._ring&&c.material.opacity>0)c.rotation.z=t}));if(gDot)gDot.scale.setScalar(1+.12*Math.sin(t*2));updateLabels();rMain.render(scene,edCam);
+const pb=scene.background;scene.background=new THREE.Color(refBg);const hide=[fcGroup,fcHelper,orbitTrack,stageGreen,stageRed,gElArc,gDot,axLine].filter(Boolean);const was=hide.map(o=>o.visible);hide.forEach(o=>o.visible=false);objs.forEach(o=>o.grp.traverse(c=>{if(c.userData._ring)c.visible=false}));document.getElementById('lblLayer').style.display='none';
+scene.traverse(function(o){if(o.material){if(Array.isArray(o.material))o.material.forEach(function(m){m.needsUpdate=true});else o.material.needsUpdate=true}});
+rMain.setRenderTarget(pipRT);rMain.render(scene,filmCam);rMain.setRenderTarget(null);blitFilmPipToPreview();document.getElementById('lblLayer').style.display='';scene.background=pb;hide.forEach((o,i)=>o.visible=was[i]);objs.forEach(o=>o.grp.traverse(c=>{if(c.userData._ring)c.visible=true}))}
+init();
+</script>
+</body>
+</html>

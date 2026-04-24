@@ -1,0 +1,47 @@
+# --- Logs ---
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- Node / Front-end build ---
+node_modules
+dist
+dist-ssr
+*.local
+
+# --- Rust / Tauri build artifacts ---
+src-tauri/target/
+src-tauri/gen/schemas/
+**/*.rs.bk
+
+# --- Editor ---
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- Claude Code / AI CLI local state ---
+.claude/worktrees/
+.claude/launch.json
+.claude/settings.local.json
+
+# --- Project-local runtime / temp ---
+tmp-*
+*.db
+*.db-shm
+*.db-wal
+
+# --- Legacy sibling projects (never to be tracked here) ---
+ComfyUI/
+ComfyUI_frontend/
+Henji-AI/
