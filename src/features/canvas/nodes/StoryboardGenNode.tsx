@@ -27,7 +27,6 @@ import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import {
-  canvasEventBus,
   canvasAiGateway,
   graphImageResolver,
 } from '@/features/canvas/application/canvasServices';
@@ -1220,15 +1219,6 @@ export const StoryboardGenNode = memo(({ id, data, selected, width, height }: St
     ignoreAtTagWhenCopyingAndGenerating,
   ]);
 
-  useEffect(() => {
-    return canvasEventBus.subscribe('generation-node/run', (payload) => {
-      if (payload.nodeId !== id) {
-        return;
-      }
-      void handleGenerate(false);
-    });
-  }, [handleGenerate, id]);
-
   const handleRowChange = useCallback(
     (delta: number) => {
       if (!nodeData) {
@@ -1705,4 +1695,5 @@ export const StoryboardGenNode = memo(({ id, data, selected, width, height }: St
 });
 
 StoryboardGenNode.displayName = 'StoryboardGenNode';
+
 

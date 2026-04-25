@@ -23,7 +23,6 @@ import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canvas/ui/NodeHeader';
 import { NodeResizeHandle } from '@/features/canvas/ui/NodeResizeHandle';
 import {
-  canvasEventBus,
   canvasAiGateway,
   graphImageResolver,
   graphPromptResolver,
@@ -657,15 +656,6 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
     upstreamCompositionPrompt,
     updateNodeData,
   ]);
-
-  useEffect(() => {
-    return canvasEventBus.subscribe('generation-node/run', (payload) => {
-      if (payload.nodeId !== id) {
-        return;
-      }
-      void handleGenerate();
-    });
-  }, [handleGenerate, id]);
 
   const syncPromptHighlightScroll = () => {
     if (!promptRef.current || !promptHighlightRef.current) {

@@ -30,8 +30,6 @@
     "addImage": "Add Image",
     "splitStoryboard": "Split Storyboard",
     "generate": "Generate",
-    "generateAllReady": "Generate All ({{count}})",
-    "generateAllReadyTitle": "Generate {{count}} ready node(s)",
     "emptyHintTitle": "Double-click to add a node",
     "emptyHintSubtitle": "Double-click to add a node",
     "toolbar": {

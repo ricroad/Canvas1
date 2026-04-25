@@ -128,9 +128,6 @@ export interface CanvasEventMap {
     nodeId: string;
     file: File;
   };
-  'generation-node/run': {
-    nodeId: string;
-  };
 }
 
 export interface CanvasEventBus {
