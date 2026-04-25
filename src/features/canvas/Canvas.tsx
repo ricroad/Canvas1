@@ -36,6 +36,7 @@ import {
   DEFAULT_NODE_WIDTH,
   isImageEditNode,
   isImageResultNode,
+  isStoryboardGenNode,
   isVideoGenNode,
   isVideoResultNode,
 } from '@/features/canvas/domain/canvasNodes';
@@ -2045,6 +2046,37 @@ export function Canvas() {
     [configuredApiKeyCount, copilotOpen, t]
   );
 
+  const batchGeneratableNodeIds = useMemo(
+    () =>
+      nodes
+        .filter((node) => {
+          if (isImageEditNode(node)) {
+            const hasPrompt = node.data.prompt.trim().length > 0;
+            const hasActiveBatch = node.data.currentBatch?.subTasks?.some((subTask) =>
+              ['pending', 'submitted', 'processing'].includes(subTask.status)
+            );
+            return hasPrompt && !node.data.isGenerating && !hasActiveBatch;
+          }
+
+          if (isStoryboardGenNode(node)) {
+            const hasPrompt = node.data.frames.some((frame) => frame.description.trim().length > 0);
+            return hasPrompt && !node.data.isGenerating;
+          }
+
+          return false;
+        })
+        .map((node) => node.id),
+    [nodes]
+  );
+
+  const handleGenerateAll = useCallback(() => {
+    batchGeneratableNodeIds.forEach((nodeId, index) => {
+      window.setTimeout(() => {
+        canvasEventBus.publish('generation-node/run', { nodeId });
+      }, index * 120);
+    });
+  }, [batchGeneratableNodeIds]);
+
   return (
     <MagneticConnectionProvider
       isConnecting={isMagneticConnecting}
@@ -2104,6 +2136,29 @@ export function Canvas() {
       </ReactFlow>
 
       {nodes.length === 0 && emptyHint}
+      {batchGeneratableNodeIds.length > 0 && (
+        <div
+          className="absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center rounded-lg border border-border-dark bg-surface-dark/92 p-1 shadow-lg backdrop-blur-sm"
+          style={{ marginRight: copilotOpen ? 424 : 0 }}
+        >
+          <button
+            type="button"
+            className="inline-flex h-8 items-center gap-2 rounded-md bg-accent px-3 text-xs font-medium text-white transition-colors hover:bg-accent/85"
+            onClick={handleGenerateAll}
+            title={t('canvas.generateAllReadyTitle', {
+              count: batchGeneratableNodeIds.length,
+              defaultValue: 'Generate ready nodes',
+            })}
+          >
+            <span>
+              {t('canvas.generateAllReady', {
+                count: batchGeneratableNodeIds.length,
+                defaultValue: 'Generate All ({{count}})',
+              })}
+            </span>
+          </button>
+        </div>
+      )}
       {nodes.length > 0 && configuredApiKeyCount === 0 && (
         <div
           className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6 transition-[right] duration-300 ease-out"
