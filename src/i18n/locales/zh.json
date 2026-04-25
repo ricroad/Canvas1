@@ -223,6 +223,11 @@
       "concurrencyLimitTip": "当前已达到视频并发上限（{{count}}）",
       "abandon": "放弃等待",
       "generatedCount": "已生成 {{count}} 个视频片段",
+      "aiChooseModel": "AI 帮选模型",
+      "aiChoosingModel": "AI 选择中...",
+      "aiChooseModelNoKey": "请先配置 {{provider}} 的 LLM API Key",
+      "aiChooseModelFailed": "AI 模型选择失败",
+      "aiChooseModelReason": "推荐理由：{{reason}}",
       "status": {
         "pending": "准备中",
         "submitted": "已提交",

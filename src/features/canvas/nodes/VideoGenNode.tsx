@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Position, useUpdateNodeInternals, type NodeProps } from '@xyflow/react';
-import { Clapperboard, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Clapperboard, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -19,9 +19,12 @@ import { NodeResizeHandle } from '@/features/canvas/ui/NodeResizeHandle';
 import { ModelParamsControls } from '@/features/canvas/ui/ModelParamsControls';
 import { UiButton } from '@/components/ui';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useCopilotStore } from '@/stores/copilotStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { canvasAiGateway } from '@/features/canvas/application/canvasServices';
+import { chooseVideoModel } from '@/features/canvas/application/videoModelDecision';
 import { getVideoModel, listVideoModels } from '@/features/canvas/models';
+import { DEFAULT_LLM_MODEL_ID, getLlmModel } from '@/features/canvas/models/llm';
 import {
   NODE_CONTROL_CHIP_CLASS,
   NODE_CONTROL_MODEL_CHIP_CLASS,
@@ -68,7 +71,9 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
   const setSelectedNode = useCanvasStore((state) => state.setSelectedNode);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
   const kling = useSettingsStore((state) => state.kling);
+  const apiKeys = useSettingsStore((state) => state.apiKeys);
   const maxConcurrent = useSettingsStore((state) => state.videoConcurrency.maxConcurrent);
+  const llmModelId = useCopilotStore((state) => state.llmModelId);
   const videoModels = useMemo(() => listVideoModels(), []);
   const currentModel = useMemo(() => getVideoModel(data.modelId), [data.modelId]);
   const resolvedTitle = useMemo(
@@ -105,6 +110,8 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
   const resolvedWidth = Math.max(VIDEO_GEN_NODE_MIN_WIDTH, Math.round(width ?? VIDEO_GEN_NODE_DEFAULT_WIDTH));
   const resolvedHeight = Math.max(VIDEO_GEN_NODE_MIN_HEIGHT, Math.round(height ?? VIDEO_GEN_NODE_DEFAULT_HEIGHT));
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isChoosingModel, setIsChoosingModel] = useState(false);
+  const [modelChoiceReason, setModelChoiceReason] = useState<string | null>(null);
   const missingRequiredSlot = useMemo(
     () => inputSlotStates.find((slot) => slot.required && !slot.imageRef) ?? null,
     [inputSlotStates]
@@ -260,6 +267,63 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     t,
     tailFrameSlot?.imageRef,
     updateNodeData,
+  ]);
+
+  const chooseModelWithLlm = useCallback(async () => {
+    if (isChoosingModel) {
+      return;
+    }
+
+    const llmModel = getLlmModel(llmModelId || DEFAULT_LLM_MODEL_ID);
+    const apiKey = apiKeys[llmModel.providerId]?.trim();
+    if (!apiKey) {
+      setLocalError(t('node.videoGen.aiChooseModelNoKey', { provider: llmModel.displayName }));
+      return;
+    }
+
+    setIsChoosingModel(true);
+    setLocalError(null);
+    setModelChoiceReason(null);
+    try {
+      const choice = await chooseVideoModel({
+        prompt: data.prompt.trim(),
+        negativePrompt: data.negativePrompt?.trim() || undefined,
+        currentModelId: data.modelId,
+        hasFirstFrame: Boolean(firstFrameSlot?.imageRef),
+        hasTailFrame: Boolean(tailFrameSlot?.imageRef),
+        models: videoModels,
+        llm: {
+          model: llmModel.id,
+          apiKey,
+          providerBaseUrl: llmModel.baseUrl,
+        },
+      });
+      const nextModel = videoModels.find((model) => model.id === choice.modelId) ?? currentModel;
+
+      updateNodeData(id, {
+        modelId: nextModel.id,
+      });
+      setModelChoiceReason(choice.reason ?? null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('node.videoGen.aiChooseModelFailed');
+      setLocalError(`${t('node.videoGen.aiChooseModelFailed')}: ${message}`);
+    } finally {
+      setIsChoosingModel(false);
+    }
+  }, [
+    apiKeys,
+    currentModel,
+    data.modelId,
+    data.negativePrompt,
+    data.prompt,
+    firstFrameSlot?.imageRef,
+    id,
+    isChoosingModel,
+    llmModelId,
+    t,
+    tailFrameSlot?.imageRef,
+    updateNodeData,
+    videoModels,
   ]);
 
   const abandonTask = useCallback(async () => {
@@ -453,6 +517,27 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
                 extraParams: { ...(nextModel.defaultExtraParams ?? {}) },
               });
             }}
+            modelPanelToolbar={
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  disabled={isChoosingModel}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/12 px-3 py-2 text-xs font-medium text-text-dark transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void chooseModelWithLlm();
+                  }}
+                >
+                  {isChoosingModel ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  <span>{isChoosingModel ? t('node.videoGen.aiChoosingModel') : t('node.videoGen.aiChooseModel')}</span>
+                </button>
+                {modelChoiceReason ? (
+                  <div className="line-clamp-2 text-[10px] leading-4 text-text-muted">
+                    {t('node.videoGen.aiChooseModelReason', { reason: modelChoiceReason })}
+                  </div>
+                ) : null}
+              </div>
+            }
             paramFields={paramFields}
             onParamChange={(key, value) => {
               if (key === 'duration') {

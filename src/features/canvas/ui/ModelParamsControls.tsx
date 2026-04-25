@@ -76,6 +76,7 @@ interface ModelParamsControlsProps<TModel extends ModelParamsModel = ModelParams
   submitLabel?: string;
   submitTitle?: string;
   topToolbar?: ReactNode;
+  modelPanelToolbar?: ReactNode;
   tokenBadge?: ReactNode | { value: number | string };
   className?: string;
   triggerSize?: 'md' | 'sm';
@@ -155,6 +156,7 @@ export const ModelParamsControls = memo(function ModelParamsControls<TModel exte
   submitLabel,
   submitTitle,
   topToolbar,
+  modelPanelToolbar,
   tokenBadge,
   className = '',
   triggerSize = 'md',
@@ -434,6 +436,11 @@ export const ModelParamsControls = memo(function ModelParamsControls<TModel exte
         >
           <UiPanel className={modelPanelClassName}>
             <div className="ui-scrollbar max-h-[340px] space-y-3 overflow-y-auto p-1">
+              {modelPanelToolbar ? (
+                <div className="border-b border-[rgba(255,255,255,0.08)] pb-2">
+                  {modelPanelToolbar}
+                </div>
+              ) : null}
               {groupedModels.map((group) => (
                 <section key={group.providerId}>
                   {groupedModels.length > 1 ? (
