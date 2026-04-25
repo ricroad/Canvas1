@@ -97,6 +97,42 @@ const IMAGE_EDIT_NODE_MAX_WIDTH = 1400;
 const IMAGE_EDIT_NODE_MAX_HEIGHT = 1000;
 const IMAGE_EDIT_NODE_DEFAULT_WIDTH = 520;
 const IMAGE_EDIT_NODE_DEFAULT_HEIGHT = 320;
+const IMAGE_GENERATION_SUBMIT_RETRY_LIMIT = 3;
+const IMAGE_GENERATION_SUBMIT_RETRY_BASE_MS = 800;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function isTransientGenerationSubmitError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return /(^|\D)(408|409|425|429|500|502|503|504)(\D|$)|timeout|timed?\s*out|rate\s*limit|too many|temporar|network|fetch/i
+    .test(message);
+}
+
+async function submitGenerateImageJobWithRetry(
+  payload: Parameters<typeof canvasAiGateway.submitGenerateImageJob>[0]
+): Promise<{ jobId: string; retryCount: number }> {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= IMAGE_GENERATION_SUBMIT_RETRY_LIMIT; attempt += 1) {
+    try {
+      const jobId = await canvasAiGateway.submitGenerateImageJob(payload);
+      return { jobId, retryCount: attempt };
+    } catch (error) {
+      lastError = error;
+      if (attempt >= IMAGE_GENERATION_SUBMIT_RETRY_LIMIT || !isTransientGenerationSubmitError(error)) {
+        throw error;
+      }
+
+      await wait(IMAGE_GENERATION_SUBMIT_RETRY_BASE_MS * (2 ** attempt));
+    }
+  }
+
+  throw lastError;
+}
 
 function getTextareaCaretOffset(
   textarea: HTMLTextAreaElement,
@@ -523,7 +559,7 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
       };
       const submissionResults = await Promise.all(
         Array.from({ length: requestedOutputCount }, async (_, index) => {
-          const jobId = await canvasAiGateway.submitGenerateImageJob({
+          const { jobId, retryCount } = await submitGenerateImageJobWithRetry({
             prompt: resolvedPrompt,
             model: requestResolution.requestModel,
             size: selectedResolution.value,
@@ -538,6 +574,7 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
             providerTaskId: jobId,
             status: 'submitted' as const,
             progress: 0,
+            retryCount,
           };
         })
       );
@@ -896,4 +933,3 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
 });
 
 ImageEditNode.displayName = 'ImageEditNode';
-

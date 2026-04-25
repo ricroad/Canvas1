@@ -58,6 +58,7 @@ export const NodeActionToolbar = memo(({ node }: NodeActionToolbarProps) => {
   const canCopyStoryboardText = isStoryboardGen || isStoryboardSplit;
   const tools = useMemo(() => getNodeToolPlugins(node), [node]);
   const deleteNode = useCanvasStore((state) => state.deleteNode);
+  const duplicateAsNewShot = useCanvasStore((state) => state.duplicateAsNewShot);
   const ungroupNode = useCanvasStore((state) => state.ungroupNode);
   const canReupload = isUploadNode(node) && Boolean(node.data.imageUrl);
   const downloadPresetPaths = useSettingsStore((state) => state.downloadPresetPaths);
@@ -388,6 +389,20 @@ export const NodeActionToolbar = memo(({ node }: NodeActionToolbarProps) => {
           >
             <Copy className="h-3.5 w-3.5" />
             {isCopyErrorSuccess ? t('nodeToolbar.copied') : t('nodeToolbar.copyErrorReport')}
+          </UiChipButton>
+        )}
+        {(isImageEdit || isStoryboardGen) && (
+          <UiChipButton
+            key="duplicate-as-shot"
+            className={`h-8 ${TOOLBAR_BUTTON_RADIUS_CLASS} px-2.5 text-xs ${TOOLBAR_NEUTRAL_BUTTON_CLASS}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              closeDownloadMenu();
+              duplicateAsNewShot(node.id);
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+            {t('nodeToolbar.duplicateAsShot')}
           </UiChipButton>
         )}
         {!isImageEdit && canHandleImage && (

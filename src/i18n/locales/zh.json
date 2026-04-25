@@ -87,6 +87,7 @@
     "copyText": "复制文本",
     "copyErrorReport": "复制报错",
     "copied": "已复制",
+    "duplicateAsShot": "复制为新 shot",
     "download": "下载",
     "ungroup": "解散",
     "saveAs": "另存为...",
@@ -266,6 +267,8 @@
       "model": "模型",
       "size": "尺寸",
       "aspectRatio": "比例",
+      "autoRetry": "自动重试",
+      "autoRetryCount": "{{count}} 次",
       "prompt": "提示词"
     }
   },
@@ -385,6 +388,8 @@
     "useUploadFilenameAsNodeTitle": "上传节点自动使用文件名作为标题",
     "useUploadFilenameAsNodeTitleDesc": "启用后，新上传图片会默认使用文件名作为节点标题（仍可双击手动重命名）。",
     "downloadPathPlaceholder": "输入目录路径，例如 /Users/name/Pictures/Storyboard 或 D:\\\\Images\\\\Storyboard",
+    "projectDefaults": "项目默认参数",
+    "projectDefaultsDesc": "新建图片和分镜生成节点会继承这里的模型、尺寸和比例；单个节点仍可单独覆盖。",
     "addPath": "添加路径",
     "chooseFolder": "选择文件夹",
     "noDownloadPresetPaths": "暂无预设路径",

@@ -11,7 +11,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { UiCheckbox, UiSelect } from '@/components/ui';
 import { UI_CONTENT_OVERLAY_INSET_CLASS, UI_DIALOG_TRANSITION_MS } from '@/components/ui/motion';
 import { useDialogTransition } from '@/components/ui/useDialogTransition';
-import { listModelProviders } from '@/features/canvas/models';
+import { listImageModels, listModelProviders } from '@/features/canvas/models';
 import { GRSAI_NANO_BANANA_PRO_MODEL_OPTIONS } from '@/features/canvas/models/providers/grsai';
 import { GRSAI_CREDIT_TIERS } from '@/features/canvas/pricing/types';
 import {
@@ -105,6 +105,9 @@ export function SettingsDialog({
     videoConcurrency,
     storyboardPlanningSkillId,
     grsaiNanoBananaProModel,
+    defaultImageModelId,
+    defaultImageSize,
+    defaultImageAspectRatio,
     hideProviderGuidePopover,
     downloadPresetPaths,
     useUploadFilenameAsNodeTitle,
@@ -130,6 +133,9 @@ export function SettingsDialog({
     setProviderApiKey,
     setStoryboardPlanningSkillId,
     setGrsaiNanoBananaProModel,
+    setDefaultImageModelId,
+    setDefaultImageSize,
+    setDefaultImageAspectRatio,
     setDownloadPresetPaths,
     setUseUploadFilenameAsNodeTitle,
     setStoryboardGenKeepStyleConsistent,
@@ -159,6 +165,7 @@ export function SettingsDialog({
       return leftIndex - rightIndex;
     });
   }, []);
+  const imageModels = useMemo(() => listImageModels(), []);
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>(initialCategory);
   const [appVersion, setAppVersion] = useState<string>('');
   const [localApiKeys, setLocalApiKeys] = useState<Record<string, string>>(apiKeys);
@@ -173,6 +180,18 @@ export function SettingsDialog({
   );
   const [localGrsaiNanoBananaProModel, setLocalGrsaiNanoBananaProModel] = useState(
     grsaiNanoBananaProModel
+  );
+  const [localDefaultImageModelId, setLocalDefaultImageModelId] = useState(defaultImageModelId);
+  const [localDefaultImageSize, setLocalDefaultImageSize] = useState(defaultImageSize);
+  const [localDefaultImageAspectRatio, setLocalDefaultImageAspectRatio] = useState(
+    defaultImageAspectRatio
+  );
+  const selectedDefaultImageModel = useMemo(
+    () =>
+      imageModels.find((model) => model.id === localDefaultImageModelId)
+      ?? imageModels[0]
+      ?? null,
+    [imageModels, localDefaultImageModelId]
   );
   const [localDownloadPathInput, setLocalDownloadPathInput] = useState('');
   const [localDownloadPresetPaths, setLocalDownloadPresetPaths] = useState(downloadPresetPaths);
@@ -256,6 +275,9 @@ export function SettingsDialog({
     setLocalStoryboardPlanningSkillId(storyboardPlanningSkillId);
     setLocalDownloadPresetPaths(downloadPresetPaths);
     setLocalGrsaiNanoBananaProModel(grsaiNanoBananaProModel);
+    setLocalDefaultImageModelId(defaultImageModelId);
+    setLocalDefaultImageSize(defaultImageSize);
+    setLocalDefaultImageAspectRatio(defaultImageAspectRatio);
     setLocalUseUploadFilenameAsNodeTitle(useUploadFilenameAsNodeTitle);
     setLocalStoryboardGenKeepStyleConsistent(storyboardGenKeepStyleConsistent);
     setLocalStoryboardGenDisableTextInImage(storyboardGenDisableTextInImage);
@@ -288,6 +310,9 @@ export function SettingsDialog({
     storyboardPlanningSkillId,
     downloadPresetPaths,
     grsaiNanoBananaProModel,
+    defaultImageModelId,
+    defaultImageSize,
+    defaultImageAspectRatio,
     useUploadFilenameAsNodeTitle,
     storyboardGenKeepStyleConsistent,
     storyboardGenDisableTextInImage,
@@ -328,6 +353,9 @@ export function SettingsDialog({
     setVideoConcurrencyMaxConcurrent(Number(localVideoMaxConcurrent));
     setStoryboardPlanningSkillId(localStoryboardPlanningSkillId);
     setGrsaiNanoBananaProModel(localGrsaiNanoBananaProModel);
+    setDefaultImageModelId(localDefaultImageModelId);
+    setDefaultImageSize(localDefaultImageSize);
+    setDefaultImageAspectRatio(localDefaultImageAspectRatio);
     setDownloadPresetPaths(localDownloadPresetPaths);
     setUseUploadFilenameAsNodeTitle(localUseUploadFilenameAsNodeTitle);
     setStoryboardGenKeepStyleConsistent(localStoryboardGenKeepStyleConsistent);
@@ -357,6 +385,9 @@ export function SettingsDialog({
     localStoryboardPlanningSkillId,
     localDownloadPresetPaths,
     localGrsaiNanoBananaProModel,
+    localDefaultImageModelId,
+    localDefaultImageSize,
+    localDefaultImageAspectRatio,
     localUseUploadFilenameAsNodeTitle,
     localStoryboardGenKeepStyleConsistent,
     localStoryboardGenDisableTextInImage,
@@ -381,6 +412,9 @@ export function SettingsDialog({
     setProviderApiKey,
     setStoryboardPlanningSkillId,
     setGrsaiNanoBananaProModel,
+    setDefaultImageModelId,
+    setDefaultImageSize,
+    setDefaultImageAspectRatio,
     setDownloadPresetPaths,
     setUseUploadFilenameAsNodeTitle,
     setStoryboardGenKeepStyleConsistent,
@@ -1255,6 +1289,77 @@ export function SettingsDialog({
                     title={t('settings.useUploadFilenameAsNodeTitle')}
                     description={t('settings.useUploadFilenameAsNodeTitleDesc')}
                   />
+
+                  <div className="rounded-lg border border-border-dark bg-bg-dark p-4">
+                    <h3 className="text-sm font-medium text-text-dark">
+                      {t('settings.projectDefaults')}
+                    </h3>
+                    <p className="mt-1 text-xs text-text-muted">
+                      {t('settings.projectDefaultsDesc')}
+                    </p>
+
+                    <div className="mt-3 grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs text-text-muted">
+                          {t('modelParams.model')}
+                        </label>
+                        <UiSelect
+                          value={localDefaultImageModelId}
+                          onChange={(event) => {
+                            const nextModelId = event.target.value;
+                            const nextModel = imageModels.find((model) => model.id === nextModelId);
+                            setLocalDefaultImageModelId(nextModelId);
+                            if (nextModel) {
+                              setLocalDefaultImageSize(nextModel.defaultResolution);
+                              setLocalDefaultImageAspectRatio(nextModel.defaultAspectRatio);
+                            }
+                          }}
+                          className="h-9 text-sm"
+                        >
+                          {imageModels.map((model) => (
+                            <option key={model.id} value={model.id}>
+                              {model.displayName}
+                            </option>
+                          ))}
+                        </UiSelect>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs text-text-muted">
+                          {t('node.imageNode.size')}
+                        </label>
+                        <UiSelect
+                          value={localDefaultImageSize}
+                          onChange={(event) => setLocalDefaultImageSize(event.target.value)}
+                          className="h-9 text-sm"
+                        >
+                          {(selectedDefaultImageModel?.resolutions ?? []).map((resolution) => (
+                            <option key={resolution.value} value={resolution.value}>
+                              {resolution.label}
+                            </option>
+                          ))}
+                        </UiSelect>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs text-text-muted">
+                          {t('modelParams.aspectRatio')}
+                        </label>
+                        <UiSelect
+                          value={localDefaultImageAspectRatio}
+                          onChange={(event) => setLocalDefaultImageAspectRatio(event.target.value)}
+                          className="h-9 text-sm"
+                        >
+                          <option value="auto">{t('modelParams.autoAspectRatio')}</option>
+                          {(selectedDefaultImageModel?.aspectRatios ?? []).map((aspectRatio) => (
+                            <option key={aspectRatio.value} value={aspectRatio.value}>
+                              {aspectRatio.label}
+                            </option>
+                          ))}
+                        </UiSelect>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="rounded-lg border border-border-dark bg-bg-dark p-4">
                     <div className="mb-3">

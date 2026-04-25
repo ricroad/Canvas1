@@ -60,6 +60,7 @@
     "copyText": "Copy Text",
     "copyErrorReport": "Copy Error",
     "copied": "Copied",
+    "duplicateAsShot": "Duplicate as Shot",
     "download": "Download",
     "ungroup": "Ungroup",
     "saveAs": "Save as...",
@@ -239,6 +240,8 @@
       "model": "Model",
       "size": "Size",
       "aspectRatio": "Aspect ratio",
+      "autoRetry": "Auto retry",
+      "autoRetryCount": "{{count}} time(s)",
       "prompt": "Prompt"
     }
   },
@@ -357,6 +360,8 @@
     "ignoreAtTagWhenCopyingAndGeneratingDesc": "When enabled, copied text and embedded storyboard metadata remove tags like \"@图1\"; generation requests only remove \"@\" and keep \"图1\".",
     "useUploadFilenameAsNodeTitle": "Use uploaded filename as node title",
     "useUploadFilenameAsNodeTitleDesc": "When enabled, newly uploaded images use the file name as the node title by default (still editable via double-click).",
+    "projectDefaults": "Project Defaults",
+    "projectDefaultsDesc": "New image and storyboard generation nodes inherit these model, size, and aspect ratio defaults. Each node can still override them.",
     "downloadPathPlaceholder": "Input folder path, e.g. /Users/name/Pictures/Storyboard or D:\\\\Images\\\\Storyboard",
     "addPath": "Add Path",
     "chooseFolder": "Choose Folder",

@@ -16,6 +16,9 @@ export type ThemeTonePreset = 'neutral' | 'warm' | 'cool';
 export type CanvasEdgeRoutingMode = 'spline' | 'orthogonal' | 'smartOrthogonal';
 export type ProviderApiKeys = Record<string, string>;
 export const DEFAULT_GRSAI_NANO_BANANA_PRO_MODEL = 'nano-banana-pro';
+export const DEFAULT_PROJECT_IMAGE_MODEL_ID = 'kie/nano-banana-2';
+export const DEFAULT_PROJECT_IMAGE_SIZE = '2K';
+export const DEFAULT_PROJECT_IMAGE_ASPECT_RATIO = 'auto';
 export type StoryboardPlanningSkillId = (typeof STORYBOARD_PLANNING_SKILLS)[number]['id'];
 
 export interface KlingSettings {
@@ -35,6 +38,9 @@ interface SettingsState {
   videoConcurrency: VideoConcurrencySettings;
   storyboardPlanningSkillId: StoryboardPlanningSkillId;
   grsaiNanoBananaProModel: string;
+  defaultImageModelId: string;
+  defaultImageSize: string;
+  defaultImageAspectRatio: string;
   hideProviderGuidePopover: boolean;
   downloadPresetPaths: string[];
   useUploadFilenameAsNodeTitle: boolean;
@@ -60,6 +66,9 @@ interface SettingsState {
   setProviderApiKey: (providerId: string, key: string) => void;
   setStoryboardPlanningSkillId: (skillId: StoryboardPlanningSkillId) => void;
   setGrsaiNanoBananaProModel: (model: string) => void;
+  setDefaultImageModelId: (modelId: string) => void;
+  setDefaultImageSize: (size: string) => void;
+  setDefaultImageAspectRatio: (aspectRatio: string) => void;
   setHideProviderGuidePopover: (hide: boolean) => void;
   setDownloadPresetPaths: (paths: string[]) => void;
   setUseUploadFilenameAsNodeTitle: (enabled: boolean) => void;
@@ -153,6 +162,21 @@ function normalizeGrsaiNanoBananaProModel(input: string | null | undefined): str
   return DEFAULT_GRSAI_NANO_BANANA_PRO_MODEL;
 }
 
+function normalizeDefaultImageModelId(input: string | null | undefined): string {
+  const trimmed = (input ?? '').trim();
+  return trimmed || DEFAULT_PROJECT_IMAGE_MODEL_ID;
+}
+
+function normalizeDefaultImageSize(input: string | null | undefined): string {
+  const trimmed = (input ?? '').trim();
+  return trimmed || DEFAULT_PROJECT_IMAGE_SIZE;
+}
+
+function normalizeDefaultImageAspectRatio(input: string | null | undefined): string {
+  const trimmed = (input ?? '').trim();
+  return trimmed || DEFAULT_PROJECT_IMAGE_ASPECT_RATIO;
+}
+
 function normalizeCanvasEdgeRoutingMode(
   input: CanvasEdgeRoutingMode | string | null | undefined
 ): CanvasEdgeRoutingMode {
@@ -220,6 +244,9 @@ export const useSettingsStore = create<SettingsState>()(
       },
       storyboardPlanningSkillId: DEFAULT_STORYBOARD_PLANNING_SKILL_ID,
       grsaiNanoBananaProModel: DEFAULT_GRSAI_NANO_BANANA_PRO_MODEL,
+      defaultImageModelId: DEFAULT_PROJECT_IMAGE_MODEL_ID,
+      defaultImageSize: DEFAULT_PROJECT_IMAGE_SIZE,
+      defaultImageAspectRatio: DEFAULT_PROJECT_IMAGE_ASPECT_RATIO,
       hideProviderGuidePopover: false,
       downloadPresetPaths: [],
       useUploadFilenameAsNodeTitle: true,
@@ -269,6 +296,12 @@ export const useSettingsStore = create<SettingsState>()(
         set({
           grsaiNanoBananaProModel: normalizeGrsaiNanoBananaProModel(model),
         }),
+      setDefaultImageModelId: (modelId) =>
+        set({ defaultImageModelId: normalizeDefaultImageModelId(modelId) }),
+      setDefaultImageSize: (size) =>
+        set({ defaultImageSize: normalizeDefaultImageSize(size) }),
+      setDefaultImageAspectRatio: (aspectRatio) =>
+        set({ defaultImageAspectRatio: normalizeDefaultImageAspectRatio(aspectRatio) }),
       setHideProviderGuidePopover: (hide) => set({ hideProviderGuidePopover: hide }),
       setDownloadPresetPaths: (paths) => {
         const uniquePaths = Array.from(
@@ -331,6 +364,9 @@ export const useSettingsStore = create<SettingsState>()(
           storyboardPlanningSkillId?: StoryboardPlanningSkillId | string;
           ignoreAtTagWhenCopyingAndGenerating?: boolean;
           grsaiNanoBananaProModel?: string;
+          defaultImageModelId?: string;
+          defaultImageSize?: string;
+          defaultImageAspectRatio?: string;
           hideProviderGuidePopover?: boolean;
           canvasEdgeRoutingMode?: CanvasEdgeRoutingMode | string;
           autoCheckAppUpdateOnLaunch?: boolean;
@@ -365,6 +401,11 @@ export const useSettingsStore = create<SettingsState>()(
             ignoreAtTagWhenCopyingAndGenerating,
             grsaiNanoBananaProModel: normalizeGrsaiNanoBananaProModel(
               state.grsaiNanoBananaProModel
+            ),
+            defaultImageModelId: normalizeDefaultImageModelId(state.defaultImageModelId),
+            defaultImageSize: normalizeDefaultImageSize(state.defaultImageSize),
+            defaultImageAspectRatio: normalizeDefaultImageAspectRatio(
+              state.defaultImageAspectRatio
             ),
             hideProviderGuidePopover: state.hideProviderGuidePopover ?? false,
             canvasEdgeRoutingMode: normalizeCanvasEdgeRoutingMode(state.canvasEdgeRoutingMode),
@@ -401,6 +442,11 @@ export const useSettingsStore = create<SettingsState>()(
           ignoreAtTagWhenCopyingAndGenerating,
           grsaiNanoBananaProModel: normalizeGrsaiNanoBananaProModel(
             state.grsaiNanoBananaProModel
+          ),
+          defaultImageModelId: normalizeDefaultImageModelId(state.defaultImageModelId),
+          defaultImageSize: normalizeDefaultImageSize(state.defaultImageSize),
+          defaultImageAspectRatio: normalizeDefaultImageAspectRatio(
+            state.defaultImageAspectRatio
           ),
           hideProviderGuidePopover: state.hideProviderGuidePopover ?? false,
           canvasEdgeRoutingMode: normalizeCanvasEdgeRoutingMode(state.canvasEdgeRoutingMode),

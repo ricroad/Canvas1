@@ -691,6 +691,7 @@ export function Canvas() {
                     size: currentNode.data.size,
                     aspectRatio: currentNode.data.requestAspectRatio ?? currentNode.data.aspectRatio,
                     extraParams: { ...(currentNode.data.extraParams ?? {}) },
+                    autoRetryCount: activeImageSubTask.retryCount ?? 0,
                   },
                   successfulVariants: [{
                     variantId: activeImageSubTask.variantId,

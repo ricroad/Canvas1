@@ -57,6 +57,7 @@ import {
   resolveMinEdgeFittedSize,
   resolveSizeInsideTargetBox,
 } from '@/features/canvas/application/imageNodeSizing';
+import { useSettingsStore } from './settingsStore';
 
 export type {
   ActiveToolDialog,
@@ -237,6 +238,7 @@ function syncImageEditResolvedFields(data: ImageEditNodeData): ImageEditNodeData
             progress: Number.isFinite(subTask.progress) ? subTask.progress : 0,
             errorMessage: subTask.errorMessage,
             errorCode: subTask.errorCode,
+            retryCount: Number.isFinite(subTask.retryCount) ? subTask.retryCount : 0,
           }))
           : [],
       }
@@ -550,6 +552,7 @@ interface CanvasState {
     sourceNodeId: string;
     targetType: CanvasNodeType;
   }) => string | null;
+  duplicateAsNewShot: (nodeId: string) => string | null;
   addEdge: (source: string, target: string) => string | null;
   findNodePosition: (sourceNodeId: string, newNodeWidth: number, newNodeHeight: number) => { x: number; y: number };
   addDerivedUploadNode: (
@@ -1143,6 +1146,48 @@ function createDefaultStoryboardExportOptions(): StoryboardExportOptions {
   };
 }
 
+function applyDefaultGenerationParams<TNode extends CanvasNode>(
+  node: TNode,
+  explicitData: Partial<CanvasNodeData> = {}
+): TNode {
+  const defaults = useSettingsStore.getState();
+  const explicit = explicitData as Record<string, unknown>;
+
+  if (isImageEditNode(node)) {
+    return {
+      ...node,
+      data: syncImageEditResolvedFields({
+        ...node.data,
+        model: typeof explicit.model === 'string' ? node.data.model : defaults.defaultImageModelId,
+        size: typeof explicit.size === 'string'
+          ? node.data.size
+          : (defaults.defaultImageSize as ImageEditNodeData['size']),
+        requestAspectRatio: typeof explicit.requestAspectRatio === 'string'
+          ? node.data.requestAspectRatio
+          : defaults.defaultImageAspectRatio,
+      }),
+    };
+  }
+
+  if (isStoryboardGenNode(node)) {
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        model: typeof explicit.model === 'string' ? node.data.model : defaults.defaultImageModelId,
+        size: typeof explicit.size === 'string'
+          ? node.data.size
+          : (defaults.defaultImageSize as ImageEditNodeData['size']),
+        requestAspectRatio: typeof explicit.requestAspectRatio === 'string'
+          ? node.data.requestAspectRatio
+          : defaults.defaultImageAspectRatio,
+      },
+    };
+  }
+
+  return node;
+}
+
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   nodes: [],
   edges: [],
@@ -1373,7 +1418,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   addNode: (type, position, data = {}) => {
     const state = get();
-    const newNode = canvasNodeFactory.createNode(type, position, data);
+    const newNode = applyDefaultGenerationParams(
+      canvasNodeFactory.createNode(type, position, data),
+      data
+    );
     set({
       nodes: [...state.nodes, newNode],
       history: {
@@ -1400,7 +1448,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const targetData = derivedFrom
       ? ({ derivedFrom } as Partial<CanvasNodeData>)
       : undefined;
-    const newNode = canvasNodeFactory.createNode(targetType, targetPosition, targetData);
+    const newNode = applyDefaultGenerationParams(
+      canvasNodeFactory.createNode(targetType, targetPosition, targetData),
+      targetData
+    );
     const sourceHandle = resolveManualConnectionSourceHandle(sourceNode);
     const targetHandle = resolveManualConnectionTargetHandle(targetType);
     const edgeId = `e-${sourceNodeId}-${newNode.id}-${sourceHandle}-${targetHandle}`;
@@ -1421,6 +1472,71 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       edges: nextEdges,
       selectedNodeId: newNode.id,
       activeToolDialog: null,
+      history: {
+        past: pushSnapshot(state.history.past, createSnapshot(state.nodes, state.edges)),
+        future: [],
+      },
+      dragHistorySnapshot: null,
+    });
+
+    return newNode.id;
+  },
+
+  duplicateAsNewShot: (nodeId) => {
+    const state = get();
+    const sourceNode = state.nodes.find((node) => node.id === nodeId);
+    if (!sourceNode || (!isImageEditNode(sourceNode) && !isStoryboardGenNode(sourceNode))) {
+      return null;
+    }
+
+    const sourceData = { ...sourceNode.data } as CanvasNodeData & Record<string, unknown>;
+    sourceData.displayName = undefined;
+    sourceData.isGenerating = false;
+    sourceData.generationStartedAt = null;
+    sourceData.generationJobId = null;
+    sourceData.generationProviderId = null;
+    sourceData.generationClientSessionId = null;
+    sourceData.generationError = null;
+    sourceData.generationErrorDetails = null;
+    sourceData.generationDebugContext = undefined;
+    sourceData.currentBatch = undefined;
+    sourceData.derivedFrom = undefined;
+
+    if ('imageUrl' in sourceData) {
+      sourceData.imageUrl = null;
+    }
+    if ('previewImageUrl' in sourceData) {
+      sourceData.previewImageUrl = null;
+    }
+    if ('generatedResultNodeIds' in sourceData) {
+      sourceData.generatedResultNodeIds = [];
+    }
+
+    const sourceSize = getNodeSize(sourceNode);
+    const newNode = canvasNodeFactory.createNode(
+      sourceNode.type,
+      {
+        x: Math.round(sourceNode.position.x + sourceSize.width + 88),
+        y: Math.round(sourceNode.position.y),
+      },
+      sourceData
+    );
+    newNode.width = sourceNode.width;
+    newNode.height = sourceNode.height;
+    newNode.style = sourceNode.style ? { ...sourceNode.style } : sourceNode.style;
+
+    const inheritedEdges = state.edges
+      .filter((edge) => edge.target === sourceNode.id)
+      .map((edge) => ({
+        ...edge,
+        id: `e-${edge.source}-${newNode.id}-${edge.sourceHandle ?? 'source'}-${edge.targetHandle ?? 'target'}`,
+        target: newNode.id,
+      }));
+
+    set({
+      nodes: [...state.nodes, newNode],
+      edges: [...state.edges, ...inheritedEdges],
+      selectedNodeId: newNode.id,
       history: {
         past: pushSnapshot(state.history.past, createSnapshot(state.nodes, state.edges)),
         future: [],

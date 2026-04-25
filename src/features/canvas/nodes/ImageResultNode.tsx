@@ -85,6 +85,7 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
     size?: string;
     aspectRatio?: string;
     prompt?: string;
+    autoRetryCount?: number;
   };
   const [isVariantMenuOpen, setIsVariantMenuOpen] = useState(false);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
@@ -334,6 +335,14 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
                   <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.imageResult.aspectRatio')}</div>
                   <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>{snapshotParams.aspectRatio ?? '-'}</div>
                 </div>
+                {Number(snapshotParams.autoRetryCount ?? 0) > 0 ? (
+                  <div>
+                    <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.imageResult.autoRetry')}</div>
+                    <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>
+                      {t('node.imageResult.autoRetryCount', { count: snapshotParams.autoRetryCount })}
+                    </div>
+                  </div>
+                ) : null}
                 <div>
                   <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.imageResult.prompt')}</div>
                   <div className={`${VIDEO_RESULT_INFO_VALUE_CLASS} line-clamp-4 whitespace-pre-wrap break-words`}>

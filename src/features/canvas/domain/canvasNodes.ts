@@ -115,6 +115,7 @@ export interface SubTaskMeta {
   progress: number;
   errorMessage?: string;
   errorCode?: number;
+  retryCount?: number;
 }
 
 export interface StoryboardFrameItem {
