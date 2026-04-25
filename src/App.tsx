@@ -178,6 +178,7 @@ function App() {
         if (!currentBatch || currentBatch.batchId !== payload.batchId) {
           return;
         }
+        const currentSubTask = currentBatch.subTasks.find((subTask) => subTask.subTaskId === payload.subTaskId);
 
         const nextSubTasks = currentBatch.subTasks.map((subTask) =>
           subTask.subTaskId !== payload.subTaskId
@@ -211,7 +212,7 @@ function App() {
 
         if (payload.status === 'succeed' && payload.videoRef && payload.thumbnailRef) {
           const batchVariants = successfulVariantsByBatch.get(payload.batchId) ?? new Map<string, VideoVariant>();
-          const snapshotParams = {
+          const snapshotParams = currentSubTask?.snapshotParams ?? {
             modelId: targetNode.data.modelId,
             prompt: targetNode.data.prompt,
             negativePrompt: targetNode.data.negativePrompt,

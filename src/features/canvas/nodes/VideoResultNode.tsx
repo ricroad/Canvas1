@@ -101,6 +101,7 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
     return Math.max(1, sourceGenNode.data.generatedResultNodeIds.indexOf(id) + 1);
   }, [id, sourceGenNode]);
   const aspectRatio = activeVariant?.snapshotParams.aspectRatio ?? data.snapshotParams.aspectRatio;
+  const displaySnapshotParams = activeVariant?.snapshotParams ?? data.snapshotParams;
   const ratio = useMemo(() => parseAspectRatio(aspectRatio), [aspectRatio]);
   const contentHeight = Math.round((VIDEO_RESULT_BASE_WIDTH * ratio.height) / ratio.width);
   const nodeHeight = VIDEO_RESULT_TOP_BAR_HEIGHT + contentHeight;
@@ -358,7 +359,7 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
               <div className="space-y-2">
                 <div>
                   <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.model')}</div>
-                  <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>{data.snapshotParams.modelId}</div>
+                  <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>{displaySnapshotParams.modelId}</div>
                 </div>
                 <div>
                   <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.duration')}</div>
@@ -371,15 +372,15 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
                 <div>
                   <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.mode')}</div>
                   <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>
-                    {typeof data.snapshotParams.extraParams?.mode === 'string'
-                      ? data.snapshotParams.extraParams.mode
+                    {typeof displaySnapshotParams.extraParams?.mode === 'string'
+                      ? displaySnapshotParams.extraParams.mode
                       : '-'}
                   </div>
                 </div>
                 <div>
                   <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.prompt')}</div>
                   <div className={`${VIDEO_RESULT_INFO_VALUE_CLASS} line-clamp-4 whitespace-pre-wrap break-words`}>
-                    {data.snapshotParams.prompt || '-'}
+                    {displaySnapshotParams.prompt || '-'}
                   </div>
                 </div>
               </div>

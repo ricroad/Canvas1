@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Position, useUpdateNodeInternals, type NodeProps } from '@xyflow/react';
-import { Clapperboard, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
+import { Clapperboard, Image as ImageIcon, Loader2, Sparkles, Swords } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -17,7 +17,7 @@ import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canvas/ui/NodeHeader';
 import { NodeResizeHandle } from '@/features/canvas/ui/NodeResizeHandle';
 import { ModelParamsControls } from '@/features/canvas/ui/ModelParamsControls';
-import { UiButton } from '@/components/ui';
+import { UiButton, UiCheckbox } from '@/components/ui';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useCopilotStore } from '@/stores/copilotStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -46,6 +46,7 @@ const VIDEO_GEN_NODE_MIN_HEIGHT = 360;
 const VIDEO_GEN_NODE_DEFAULT_WIDTH = 460;
 const VIDEO_GEN_NODE_DEFAULT_HEIGHT = 280;
 const VIDEO_INPUT_SLOT_SIZE = 76;
+const VIDEO_TERMINAL_TASK_STATUSES = new Set(['succeed', 'failed', 'abandoned']);
 
 function findInputImageByHandle(
   nodeId: string,
@@ -110,7 +111,9 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
   const resolvedWidth = Math.max(VIDEO_GEN_NODE_MIN_WIDTH, Math.round(width ?? VIDEO_GEN_NODE_DEFAULT_WIDTH));
   const resolvedHeight = Math.max(VIDEO_GEN_NODE_MIN_HEIGHT, Math.round(height ?? VIDEO_GEN_NODE_DEFAULT_HEIGHT));
   const [localError, setLocalError] = useState<string | null>(null);
+  const [isAiModelChoiceEnabled, setIsAiModelChoiceEnabled] = useState(false);
   const [isChoosingModel, setIsChoosingModel] = useState(false);
+  const [isRunningArena, setIsRunningArena] = useState(false);
   const [modelChoiceReason, setModelChoiceReason] = useState<string | null>(null);
   const missingRequiredSlot = useMemo(
     () => inputSlotStates.find((slot) => slot.required && !slot.imageRef) ?? null,
@@ -153,6 +156,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     [id, nodes]
   );
   const isConcurrencyLimited = activeTaskCount >= maxConcurrent;
+  const isActionBusy = isBusy || isRunningArena;
   const paramFields = useMemo(
     () => buildVideoGenerationParamFields({
       t,
@@ -269,8 +273,181 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     updateNodeData,
   ]);
 
+  const buildModelSnapshotParams = useCallback((modelId: string) => {
+    const model = getVideoModel(modelId);
+    const duration = model.supportedDurations.includes(data.duration)
+      ? data.duration
+      : model.supportedDurations[0] ?? data.duration;
+    const aspectRatio = model.supportedAspectRatios.includes(data.aspectRatio)
+      ? data.aspectRatio
+      : model.defaultAspectRatio;
+    const extraParams = {
+      ...(model.defaultExtraParams ?? {}),
+      ...(data.extraParams ?? {}),
+    };
+    if (
+      typeof extraParams.mode === 'string'
+      && !model.supportedModes.includes(extraParams.mode as 'std' | 'pro')
+    ) {
+      const defaultMode = model.defaultExtraParams?.mode;
+      if (typeof defaultMode === 'string' && model.supportedModes.includes(defaultMode as 'std' | 'pro')) {
+        extraParams.mode = defaultMode;
+      } else {
+        delete extraParams.mode;
+      }
+    }
+
+    return {
+      model,
+      snapshotParams: {
+        modelId: model.id,
+        prompt: data.prompt.trim(),
+        negativePrompt: data.negativePrompt?.trim() || undefined,
+        duration,
+        aspectRatio,
+        extraParams,
+        firstFrameRef: firstFrameSlot?.imageRef ?? '',
+        tailFrameRef: tailFrameSlot?.imageRef ?? undefined,
+      },
+    };
+  }, [
+    data.aspectRatio,
+    data.duration,
+    data.extraParams,
+    data.negativePrompt,
+    data.prompt,
+    firstFrameSlot?.imageRef,
+    tailFrameSlot?.imageRef,
+  ]);
+
+  const runModelArena = useCallback(async () => {
+    if (isActionBusy) {
+      return;
+    }
+    setLocalError(null);
+    if (missingRequiredSlot) {
+      setLocalError(
+        missingRequiredSlot.handleId === 'image-first-frame'
+          ? t('node.videoGeneration.noSourceImage')
+          : `${missingRequiredSlot.label} is required.`
+      );
+      return;
+    }
+    if (!data.prompt.trim()) {
+      setLocalError(t('node.videoGeneration.promptRequired'));
+      return;
+    }
+    if (!kling.enabled || !kling.accessKey?.trim() || !kling.secretKey?.trim()) {
+      setLocalError(t('node.videoGeneration.noApiKey'));
+      return;
+    }
+
+    const batchId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const submittedAt = Date.now();
+    setIsRunningArena(true);
+    updateNodeData(id, {
+      currentTask: {
+        taskId: '',
+        status: 'pending',
+        progress: 0,
+        submittedAt,
+      },
+    });
+
+    try {
+      const arenaSubTasks: NonNullable<VideoGenNodeData['currentBatch']>['subTasks'] = [];
+      for (const model of videoModels) {
+        const { snapshotParams } = buildModelSnapshotParams(model.id);
+        try {
+          const response = await canvasAiGateway.submitVideoBatch({
+            nodeId: id,
+            batchId,
+            modelId: model.id,
+            prompt: snapshotParams.prompt,
+            negativePrompt: snapshotParams.negativePrompt,
+            duration: snapshotParams.duration,
+            aspectRatio: snapshotParams.aspectRatio,
+            extraParams: snapshotParams.extraParams,
+            providerConfig: model.providerConfig,
+            firstFrameRef: snapshotParams.firstFrameRef,
+            tailFrameRef: snapshotParams.tailFrameRef,
+            outputCount: 1,
+            accessKey: kling.accessKey.trim(),
+            secretKey: kling.secretKey.trim(),
+          });
+          arenaSubTasks.push(...response.subTasks.map((subTask) => ({
+            subTaskId: subTask.subTaskId,
+            variantId: subTask.variantId,
+            klingTaskId: subTask.klingTaskId,
+            status: 'submitted' as const,
+            progress: 10,
+            snapshotParams,
+          })));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : t('node.videoGen.modelArenaSubmitFailed');
+          const localId = globalThis.crypto?.randomUUID?.() ?? `${model.id}-${Date.now()}`;
+          arenaSubTasks.push({
+            subTaskId: localId,
+            variantId: localId,
+            status: 'failed',
+            progress: 0,
+            errorMessage: `${model.displayName}: ${message}`,
+            snapshotParams,
+          });
+        }
+      }
+
+      const submittedSubTask = arenaSubTasks.find((subTask) => !VIDEO_TERMINAL_TASK_STATUSES.has(subTask.status));
+      if (!submittedSubTask) {
+        updateNodeData(id, {
+          currentBatch: undefined,
+          currentTask: {
+            taskId: '',
+            status: 'failed',
+            progress: 0,
+            errorMessage: t('node.videoGen.modelArenaSubmitFailed'),
+            submittedAt,
+          },
+        });
+        return;
+      }
+
+      updateNodeData(id, {
+        currentBatch: {
+          batchId,
+          submittedAt,
+          subTasks: arenaSubTasks,
+        },
+        currentTask: {
+          taskId: submittedSubTask.klingTaskId ?? '',
+          status: 'submitted',
+          progress: 10,
+          submittedAt,
+        },
+      });
+
+      if (arenaSubTasks.some((subTask) => subTask.status === 'failed')) {
+        setLocalError(t('node.videoGen.modelArenaPartialFailed'));
+      }
+    } finally {
+      setIsRunningArena(false);
+    }
+  }, [
+    buildModelSnapshotParams,
+    data.prompt,
+    id,
+    isActionBusy,
+    kling.accessKey,
+    kling.enabled,
+    kling.secretKey,
+    missingRequiredSlot,
+    t,
+    updateNodeData,
+    videoModels,
+  ]);
+
   const chooseModelWithLlm = useCallback(async () => {
-    if (isChoosingModel) {
+    if (!isAiModelChoiceEnabled || isChoosingModel) {
       return;
     }
 
@@ -318,6 +495,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     data.prompt,
     firstFrameSlot?.imageRef,
     id,
+    isAiModelChoiceEnabled,
     isChoosingModel,
     llmModelId,
     t,
@@ -519,10 +697,45 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
             }}
             modelPanelToolbar={
               <div className="space-y-1.5">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs transition-colors ${isAiModelChoiceEnabled
+                    ? 'border-accent/35 bg-accent/12 text-text-dark'
+                    : 'border-[rgba(255,255,255,0.1)] bg-bg-dark/65 text-text-muted hover:border-[rgba(255,255,255,0.2)]'
+                    }`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsAiModelChoiceEnabled((enabled) => !enabled);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                      return;
+                    }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setIsAiModelChoiceEnabled((enabled) => !enabled);
+                  }}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{t('node.videoGen.aiModelChoice')}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="text-[10px] text-text-muted">
+                      {isAiModelChoiceEnabled ? t('node.videoGen.enabled') : t('node.videoGen.disabled')}
+                    </span>
+                    <UiCheckbox
+                      checked={isAiModelChoiceEnabled}
+                      onCheckedChange={setIsAiModelChoiceEnabled}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                  </span>
+                </div>
                 <button
                   type="button"
-                  disabled={isChoosingModel}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/12 px-3 py-2 text-xs font-medium text-text-dark transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={!isAiModelChoiceEnabled || isChoosingModel}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/12 px-3 py-2 text-xs font-medium text-text-dark transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={(event) => {
                     event.stopPropagation();
                     void chooseModelWithLlm();
@@ -530,6 +743,18 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
                 >
                   {isChoosingModel ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                   <span>{isChoosingModel ? t('node.videoGen.aiChoosingModel') : t('node.videoGen.aiChooseModel')}</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isActionBusy || Boolean(missingRequiredSlot)}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(255,255,255,0.14)] bg-bg-dark/65 px-3 py-2 text-xs font-medium text-text-dark transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void runModelArena();
+                  }}
+                >
+                  {isRunningArena ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Swords className="h-3.5 w-3.5" />}
+                  <span>{isRunningArena ? t('node.videoGen.modelArenaRunning') : t('node.videoGen.modelArena')}</span>
                 </button>
                 {modelChoiceReason ? (
                   <div className="line-clamp-2 text-[10px] leading-4 text-text-muted">
@@ -560,7 +785,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
               });
             }}
             onSubmit={() => void submitTask()}
-            submitDisabled={isBusy || isConcurrencyLimited || Boolean(missingRequiredSlot)}
+            submitDisabled={isActionBusy || isConcurrencyLimited || Boolean(missingRequiredSlot)}
             submitVariant="circle"
             submitTitle={generateButtonTitle}
             triggerSize="sm"

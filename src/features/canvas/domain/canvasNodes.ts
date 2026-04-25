@@ -217,6 +217,7 @@ export interface VideoGenNodeData extends NodeDisplayData {
       progress: number;
       errorMessage?: string;
       errorCode?: number;
+      snapshotParams?: VideoResultNodeData['snapshotParams'];
     }>;
   };
   // Legacy single-task view retained in Round 1 so existing node UI compiles unchanged.
