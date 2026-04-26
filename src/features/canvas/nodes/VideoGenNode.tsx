@@ -17,7 +17,7 @@ import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canvas/ui/NodeHeader';
 import { NodeResizeHandle } from '@/features/canvas/ui/NodeResizeHandle';
 import { ModelParamsControls } from '@/features/canvas/ui/ModelParamsControls';
-import { UiButton, UiCheckbox } from '@/components/ui';
+import { UiButton, UiSwitch } from '@/components/ui';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useCopilotStore } from '@/stores/copilotStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -698,36 +698,23 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
             modelPanelToolbar={
               <div className="space-y-1.5">
                 <div
-                  role="button"
-                  tabIndex={0}
                   className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs transition-colors ${isAiModelChoiceEnabled
-                    ? 'border-accent/35 bg-accent/12 text-text-dark'
-                    : 'border-[rgba(255,255,255,0.1)] bg-bg-dark/65 text-text-muted hover:border-[rgba(255,255,255,0.2)]'
+                    ? 'border-accent/35 bg-accent/10 text-text-dark'
+                    : 'border-[rgba(255,255,255,0.1)] bg-bg-dark/65 text-text-muted'
                     }`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setIsAiModelChoiceEnabled((enabled) => !enabled);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key !== 'Enter' && event.key !== ' ') {
-                      return;
-                    }
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setIsAiModelChoiceEnabled((enabled) => !enabled);
-                  }}
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                    <Sparkles className={`h-3.5 w-3.5 shrink-0 ${isAiModelChoiceEnabled ? 'text-accent' : 'text-text-muted'}`} />
                     <span className="truncate">{t('node.videoGen.aiModelChoice')}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <span className="text-[10px] text-text-muted">
+                    <span className={`text-[10px] ${isAiModelChoiceEnabled ? 'text-accent' : 'text-text-muted'}`}>
                       {isAiModelChoiceEnabled ? t('node.videoGen.enabled') : t('node.videoGen.disabled')}
                     </span>
-                    <UiCheckbox
+                    <UiSwitch
                       checked={isAiModelChoiceEnabled}
                       onCheckedChange={setIsAiModelChoiceEnabled}
+                      aria-label={t('node.videoGen.aiModelChoice')}
                       onClick={(event) => event.stopPropagation()}
                     />
                   </span>
