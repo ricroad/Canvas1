@@ -447,7 +447,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
   ]);
 
   const chooseModelWithLlm = useCallback(async () => {
-    if (!isAiModelChoiceEnabled || isChoosingModel) {
+    if (isChoosingModel) {
       return;
     }
 
@@ -495,7 +495,6 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     data.prompt,
     firstFrameSlot?.imageRef,
     id,
-    isAiModelChoiceEnabled,
     isChoosingModel,
     llmModelId,
     t,
@@ -503,6 +502,13 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     updateNodeData,
     videoModels,
   ]);
+
+  const handleAiModelChoiceChange = useCallback((enabled: boolean) => {
+    setIsAiModelChoiceEnabled(enabled);
+    if (enabled) {
+      void chooseModelWithLlm();
+    }
+  }, [chooseModelWithLlm]);
 
   const abandonTask = useCallback(async () => {
     if (!data.currentBatch?.batchId) {
@@ -697,39 +703,41 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
             }}
             modelPanelToolbar={
               <div className="space-y-1.5">
-                <div
+                <button
+                  type="button"
                   className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs transition-colors ${isAiModelChoiceEnabled
                     ? 'border-accent/35 bg-accent/10 text-text-dark'
-                    : 'border-[rgba(255,255,255,0.1)] bg-bg-dark/65 text-text-muted'
+                    : 'border-[rgba(255,255,255,0.1)] bg-bg-dark/65 text-text-muted hover:border-[rgba(255,255,255,0.2)]'
                     }`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleAiModelChoiceChange(!isAiModelChoiceEnabled);
+                  }}
                 >
                   <span className="flex min-w-0 items-center gap-2">
-                    <Sparkles className={`h-3.5 w-3.5 shrink-0 ${isAiModelChoiceEnabled ? 'text-accent' : 'text-text-muted'}`} />
+                    {isChoosingModel ? (
+                      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-accent" />
+                    ) : (
+                      <Sparkles className={`h-3.5 w-3.5 shrink-0 ${isAiModelChoiceEnabled ? 'text-accent' : 'text-text-muted'}`} />
+                    )}
                     <span className="truncate">{t('node.videoGen.aiModelChoice')}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
                     <span className={`text-[10px] ${isAiModelChoiceEnabled ? 'text-accent' : 'text-text-muted'}`}>
-                      {isAiModelChoiceEnabled ? t('node.videoGen.enabled') : t('node.videoGen.disabled')}
+                      {isChoosingModel
+                        ? t('node.videoGen.aiChoosingModel')
+                        : isAiModelChoiceEnabled
+                          ? t('node.videoGen.enabled')
+                          : t('node.videoGen.disabled')}
                     </span>
                     <UiSwitch
                       checked={isAiModelChoiceEnabled}
-                      onCheckedChange={setIsAiModelChoiceEnabled}
+                      disabled={isChoosingModel}
+                      onCheckedChange={handleAiModelChoiceChange}
                       aria-label={t('node.videoGen.aiModelChoice')}
                       onClick={(event) => event.stopPropagation()}
                     />
                   </span>
-                </div>
-                <button
-                  type="button"
-                  disabled={!isAiModelChoiceEnabled || isChoosingModel}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-accent/30 bg-accent/12 px-3 py-2 text-xs font-medium text-text-dark transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void chooseModelWithLlm();
-                  }}
-                >
-                  {isChoosingModel ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                  <span>{isChoosingModel ? t('node.videoGen.aiChoosingModel') : t('node.videoGen.aiChooseModel')}</span>
                 </button>
                 <button
                   type="button"

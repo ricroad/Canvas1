@@ -199,7 +199,6 @@
       "aiModelChoice": "Auto select",
       "enabled": "On",
       "disabled": "Off",
-      "aiChooseModel": "Auto select now",
       "aiChoosingModel": "Auto selecting...",
       "aiChooseModelNoKey": "Configure the {{provider}} LLM API key first",
       "aiChooseModelFailed": "Auto select failed",

@@ -226,7 +226,6 @@
       "aiModelChoice": "自动选择",
       "enabled": "开",
       "disabled": "关",
-      "aiChooseModel": "立即自动选择",
       "aiChoosingModel": "自动选择中...",
       "aiChooseModelNoKey": "请先配置 {{provider}} 的 LLM API Key",
       "aiChooseModelFailed": "自动选择失败",
