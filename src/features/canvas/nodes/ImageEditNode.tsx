@@ -28,6 +28,8 @@ import {
   graphPromptResolver,
 } from '@/features/canvas/application/canvasServices';
 import { resolveErrorContent, showErrorDialog } from '@/features/canvas/application/errorDialog';
+import { createMockImageDataUrl } from '@/features/canvas/application/mockImageGeneration';
+import { isTestProjectName } from '@/features/canvas/application/testProjectMode';
 import {
   detectAspectRatio,
   parseAspectRatio,
@@ -71,6 +73,7 @@ import {
   getImageGenerationModelDisplayParts,
 } from '@/features/canvas/nodes/param-config/imageGenerationParams';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 
 type ImageEditNodeProps = NodeProps & {
@@ -272,6 +275,8 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
   const edges = useCanvasStore((state) => state.edges);
   const setSelectedNode = useCanvasStore((state) => state.setSelectedNode);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
+  const deriveOrUpdateResultBatch = useCanvasStore((state) => state.deriveOrUpdateResultBatch);
+  const currentProjectName = useProjectStore((state) => state.currentProject?.name);
   const apiKeys = useSettingsStore((state) => state.apiKeys);
   const grsaiNanoBananaProModel = useSettingsStore((state) => state.grsaiNanoBananaProModel);
   const showNodePrice = useSettingsStore((state) => state.showNodePrice);
@@ -310,6 +315,7 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
     return getImageModel(modelId);
   }, [data.model]);
   const providerApiKey = apiKeys[selectedModel.providerId] ?? '';
+  const isTestProject = isTestProjectName(currentProjectName);
   const effectiveExtraParams = useMemo(
     () => ({
       ...(data.extraParams ?? {}),
@@ -500,6 +506,37 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
     const resolvedPrompt = compositionPrompt
       ? `${prompt}\n\nComposition constraints: ${compositionPrompt}`
       : prompt;
+    if (isTestProject) {
+      const generationStartedAt = Date.now();
+      const batchId = `mock-image-batch-${generationStartedAt}-${Math.random().toString(36).slice(2, 10)}`;
+      const requestedOutputCount = Math.max(1, Math.min(4, Math.round(Number(data.outputCount ?? 1))));
+      const mockPrompt = resolvedPrompt || 'Mock image prompt';
+      const resolvedRequestAspectRatio = selectedAspectRatio.value === AUTO_REQUEST_ASPECT_RATIO
+        ? pickClosestAspectRatio(1, supportedAspectRatioValues)
+        : selectedAspectRatio.value;
+
+      deriveOrUpdateResultBatch({
+        sourceGenNodeId: id,
+        batchId,
+        kind: 'image',
+        snapshotParams: {
+          prompt: mockPrompt,
+          model: requestResolution.requestModel,
+          size: selectedResolution.value,
+          aspectRatio: resolvedRequestAspectRatio,
+          extraParams: effectiveExtraParams,
+          autoRetryCount: 0,
+        },
+        successfulVariants: Array.from({ length: requestedOutputCount }, (_, index) => ({
+          variantId: `${batchId}-variant-${index + 1}`,
+          imageUrl: createMockImageDataUrl(mockPrompt, index),
+          createdAt: generationStartedAt + index,
+        })),
+      });
+      setError(null);
+      return;
+    }
+
     if (!prompt) {
       const errorMessage = t('node.imageEdit.promptRequired');
       setError(errorMessage);
@@ -641,10 +678,12 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
   }, [
     providerApiKey,
     data.outputCount,
+    deriveOrUpdateResultBatch,
     promptDraft,
     effectiveExtraParams,
     id,
     incomingImages,
+    isTestProject,
     requestResolution.requestModel,
     selectedAspectRatio.value,
     selectedModel.id,

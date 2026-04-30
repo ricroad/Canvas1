@@ -25,12 +25,15 @@ import {
 import { EXPORT_RESULT_DISPLAY_NAME, resolveNodeDisplayName } from '@/features/canvas/domain/nodeDisplay';
 import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import {
   canvasAiGateway,
   graphImageResolver,
 } from '@/features/canvas/application/canvasServices';
 import { resolveErrorContent, showErrorDialog } from '@/features/canvas/application/errorDialog';
+import { createMockImageDataUrl } from '@/features/canvas/application/mockImageGeneration';
+import { isTestProjectName } from '@/features/canvas/application/testProjectMode';
 import {
   detectAspectRatio,
   parseAspectRatio,
@@ -531,6 +534,7 @@ export const StoryboardGenNode = memo(({ id, data, selected, width, height }: St
   const addNode = useCanvasStore((state) => state.addNode);
   const addEdge = useCanvasStore((state) => state.addEdge);
   const findNodePosition = useCanvasStore((state) => state.findNodePosition);
+  const currentProjectName = useProjectStore((state) => state.currentProject?.name);
   const apiKeys = useSettingsStore((state) => state.apiKeys);
   const grsaiNanoBananaProModel = useSettingsStore((state) => state.grsaiNanoBananaProModel);
   const storyboardGenKeepStyleConsistent = useSettingsStore(
@@ -604,6 +608,7 @@ export const StoryboardGenNode = memo(({ id, data, selected, width, height }: St
     return getImageModel(modelId);
   }, [nodeData.model]);
   const providerApiKey = apiKeys[selectedModel.providerId] ?? '';
+  const isTestProject = isTestProjectName(currentProjectName);
   const effectiveExtraParams = useMemo(
     () => ({
       ...(nodeData.extraParams ?? {}),
@@ -1041,14 +1046,14 @@ export const StoryboardGenNode = memo(({ id, data, selected, width, height }: St
     }
 
     const prompt = buildPrompt();
-    if (!prompt) {
+    if (!isTestProject && !prompt) {
       const errorMessage = 'Please fill in at least one storyboard panel description';
       setError(errorMessage);
       void showErrorDialog(errorMessage, 'Error');
       return;
     }
 
-    if (!providerApiKey) {
+    if (!isTestProject && !providerApiKey) {
       const errorMessage = 'Please configure the provider API key in Settings';
       setError(errorMessage);
       void showErrorDialog(errorMessage, 'Error');
@@ -1094,6 +1099,37 @@ export const StoryboardGenNode = memo(({ id, data, selected, width, height }: St
 
     setSelectedNode(null);
     setError(null);
+
+    if (isTestProject) {
+      const metadataFrameNotes = nodeData.frames
+        .slice(0, safeRows * safeCols)
+        .map((frame) => {
+          const description = frameDescriptionDraftsRef.current[frame.id] ?? frame.description;
+          return sanitizeStoryboardText(description, ignoreAtTagWhenCopyingAndGenerating);
+        });
+      const mockPrompt = prompt || 'Mock storyboard prompt';
+      updateNodeData(newNodeId, {
+        variants: [{
+          variantId: `${batchId}-variant-1`,
+          imageUrl: createMockImageDataUrl(mockPrompt, 0),
+          createdAt: generationStartedAt,
+        }],
+        selectedVariantIndex: 0,
+        isGenerating: false,
+        generationStartedAt: null,
+        generationJobId: null,
+        generationProviderId: null,
+        generationClientSessionId: null,
+        generationStoryboardMetadata: {
+          gridRows: safeRows,
+          gridCols: safeCols,
+          frameNotes: metadataFrameNotes,
+        },
+        generationError: null,
+        generationErrorDetails: null,
+      });
+      return;
+    }
 
     try {
       await canvasAiGateway.setApiKey(selectedModel.providerId, providerApiKey);
@@ -1196,6 +1232,7 @@ export const StoryboardGenNode = memo(({ id, data, selected, width, height }: St
     }
   }, [
     providerApiKey,
+    isTestProject,
     nodeData,
     incomingImages,
     requestResolution.requestModel,
