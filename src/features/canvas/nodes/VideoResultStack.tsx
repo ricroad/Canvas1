@@ -1,8 +1,9 @@
-import { Play } from 'lucide-react';
+import { Check, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveImageDisplayUrl } from '@/features/canvas/application/imageData';
 import type { VideoVariant } from '@/features/canvas/domain/canvasNodes';
+import { getVideoModel } from '@/features/canvas/models';
 import {
   VIDEO_RESULT_OVERLAY_BUTTON_CLASS,
   VIDEO_RESULT_SURFACE_CLASS,
@@ -19,12 +20,118 @@ export interface VideoResultStackProps {
   onAdopt: (index: number) => void;
 }
 
+interface VariantCardProps {
+  variant: VideoVariant;
+  index: number;
+  isSelected: boolean;
+  onSelect: (index: number) => void;
+  onPreview: (index: number) => void;
+  onAdopt: (index: number) => void;
+  labels: {
+    preview: string;
+    adopt: string;
+    thumbnailAlt: string;
+    missingThumbnail: string;
+  };
+}
+
+function formatDuration(seconds: number): string {
+  return `${seconds}s`;
+}
+
+function VariantCard({
+  variant,
+  index,
+  isSelected,
+  onSelect,
+  onPreview,
+  onAdopt,
+  labels,
+}: VariantCardProps) {
+  const thumbnailUrl = resolveImageDisplayUrl(variant.thumbnailRef);
+  const modelName = getVideoModel(variant.snapshotParams.modelId).displayName;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className={[
+        'group/card relative aspect-video overflow-hidden rounded-lg border bg-bg-dark text-left shadow-sm transition-all duration-150',
+        isSelected
+          ? 'border-accent shadow-[0_0_0_1px_rgba(59,130,246,0.34)]'
+          : 'border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.24)]',
+      ].join(' ')}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect(index);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          onSelect(index);
+        }
+      }}
+    >
+      {thumbnailUrl ? (
+        <img src={thumbnailUrl} alt={labels.thumbnailAlt} className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+          {labels.missingThumbnail}
+        </div>
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-b from-black/46 via-transparent to-black/52" />
+
+      {isSelected ? (
+        <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white shadow-lg">
+          <Check className="h-3 w-3" />
+        </span>
+      ) : null}
+
+      <span className="absolute right-1 top-1 max-w-[calc(100%-2.25rem)] truncate rounded-md bg-black/62 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm">
+        {modelName}
+      </span>
+
+      <span className="absolute bottom-1 left-1 rounded-md bg-black/62 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm">
+        {formatDuration(variant.videoDurationSeconds)}
+      </span>
+
+      <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 transition-opacity duration-150 group-hover/card:opacity-100">
+        <button
+          type="button"
+          className="inline-flex h-6 items-center rounded-md border border-[rgba(255,255,255,0.14)] bg-black/68 px-2 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-black/82"
+          onClick={(event) => {
+            event.stopPropagation();
+            onPreview(index);
+          }}
+        >
+          {labels.preview}
+        </button>
+        <button
+          type="button"
+          className="inline-flex h-6 items-center rounded-md border border-accent/40 bg-accent/84 px-2 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-accent"
+          onClick={(event) => {
+            event.stopPropagation();
+            onAdopt(index);
+          }}
+        >
+          {labels.adopt}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function VideoResultStack({
   variants,
   selectedIndex,
   contentHeight,
   isExpanded,
   onToggleExpand,
+  onSelect,
+  onPreview,
+  onAdopt,
 }: VideoResultStackProps) {
   const { t } = useTranslation();
 
@@ -32,13 +139,45 @@ export function VideoResultStack({
     return null;
   }
 
-  if (variants.length < 2 || isExpanded) {
+  if (variants.length < 2) {
     return (
       <div
         className={`relative overflow-hidden ${VIDEO_RESULT_SURFACE_CLASS}`}
         style={{ height: `${contentHeight}px` }}
         data-expanded={isExpanded}
       />
+    );
+  }
+
+  if (isExpanded) {
+    const labels = {
+      preview: t('node.videoResult.preview'),
+      adopt: t('node.videoResult.adopt'),
+      thumbnailAlt: t('node.videoResult.thumbnailAlt'),
+      missingThumbnail: t('node.videoResult.missingThumbnail'),
+    };
+
+    return (
+      <div
+        className={`relative overflow-y-auto ${VIDEO_RESULT_SURFACE_CLASS}`}
+        style={{ height: `${contentHeight}px`, maxHeight: `${contentHeight}px` }}
+        data-expanded={isExpanded}
+      >
+        <div className="grid grid-cols-2 gap-2 p-2">
+          {variants.map((variant, index) => (
+            <VariantCard
+              key={variant.variantId}
+              variant={variant}
+              index={index}
+              isSelected={index === selectedIndex}
+              onSelect={onSelect}
+              onPreview={onPreview}
+              onAdopt={onAdopt}
+              labels={labels}
+            />
+          ))}
+        </div>
+      </div>
     );
   }
 

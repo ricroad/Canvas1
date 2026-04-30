@@ -221,6 +221,7 @@
       "quickCreate": "Create downstream",
       "derivedFrom": "From #{{index}}",
       "play": "Play",
+      "preview": "Preview",
       "download": "Download",
       "fullscreen": "Fullscreen",
       "trace": "Trace",

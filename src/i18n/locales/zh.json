@@ -248,6 +248,7 @@
       "derivedFrom": "来自 #{{index}}",
       "label": "视频结果",
       "play": "播放",
+      "preview": "预览",
       "download": "下载",
       "fullscreen": "全屏",
       "trace": "溯源",
