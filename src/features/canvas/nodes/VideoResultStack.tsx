@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -53,6 +53,8 @@ const GRID_PADDING = 8;
 const GRID_GAP = 8;
 const GRID_CARD_WIDTH = 148;
 const GRID_CARD_HEIGHT = 83;
+const DRAG_PREVIEW_THRESHOLD = 6;
+const ZERO_OFFSET = { x: 0, y: 0 };
 
 function getCollapsedDepth(index: number, selectedIndex: number, total: number): number {
   if (index === selectedIndex) {
@@ -66,7 +68,8 @@ function getMotionCardStyle(
   index: number,
   selectedIndex: number,
   total: number,
-  isExpandedTarget: boolean
+  isExpandedTarget: boolean,
+  offset = ZERO_OFFSET
 ): CSSProperties {
   const column = index % 2;
   const row = Math.floor(index / 2);
@@ -77,8 +80,8 @@ function getMotionCardStyle(
       width: `${GRID_CARD_WIDTH}px`,
       height: `${GRID_CARD_HEIGHT}px`,
       opacity: 1,
-      transform: `translate(${GRID_PADDING + column * (GRID_CARD_WIDTH + GRID_GAP)}px, ${
-        GRID_PADDING + row * (GRID_CARD_HEIGHT + GRID_GAP)
+      transform: `translate(${GRID_PADDING + column * (GRID_CARD_WIDTH + GRID_GAP) + offset.x}px, ${
+        GRID_PADDING + row * (GRID_CARD_HEIGHT + GRID_GAP) + offset.y
       }px) rotate(0deg) scale(1)`,
       zIndex: 20 + index,
       transition: `opacity ${STACK_MOTION_MS}ms ease-out, transform ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1), width ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1), height ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1)`,
@@ -130,6 +133,129 @@ function useStackMotion(isExpanded: boolean) {
   }, [isExpanded]);
 
   return { isMotionVisible, motionExpanded };
+}
+
+function useStackDragPreview(isExpanded: boolean, isStackMotionVisible: boolean, onToggleExpand: () => void) {
+  const startRef = useRef<{ x: number; y: number } | null>(null);
+  const pointerIdRef = useRef<number | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const releaseTimeoutRef = useRef<number | null>(null);
+  const [isDragPreviewVisible, setIsDragPreviewVisible] = useState(false);
+  const [isDragPreviewExpanded, setIsDragPreviewExpanded] = useState(false);
+  const [dragOffset, setDragOffset] = useState(ZERO_OFFSET);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+      if (releaseTimeoutRef.current !== null) {
+        window.clearTimeout(releaseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const releasePointerCapture = (event: ReactPointerEvent<HTMLElement>) => {
+    if (pointerIdRef.current === null) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(pointerIdRef.current)) {
+      event.currentTarget.releasePointerCapture(pointerIdRef.current);
+    }
+    pointerIdRef.current = null;
+  };
+
+  const closeDragPreview = () => {
+    setIsDragPreviewExpanded(false);
+    setDragOffset(ZERO_OFFSET);
+    if (releaseTimeoutRef.current !== null) {
+      window.clearTimeout(releaseTimeoutRef.current);
+    }
+    releaseTimeoutRef.current = window.setTimeout(() => {
+      setIsDragPreviewVisible(false);
+    }, STACK_MOTION_MS + 80);
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (isExpanded || isStackMotionVisible || event.button !== 0) {
+      return;
+    }
+
+    event.stopPropagation();
+    startRef.current = { x: event.clientX, y: event.clientY };
+    pointerIdRef.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const start = startRef.current;
+    if (!start || isExpanded || isStackMotionVisible) {
+      return;
+    }
+
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    const distance = Math.hypot(dx, dy);
+    if (!isDragPreviewVisible && distance < DRAG_PREVIEW_THRESHOLD) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setDragOffset({ x: dx * 0.18, y: dy * 0.18 });
+
+    if (!isDragPreviewVisible) {
+      setIsDragPreviewVisible(true);
+      setIsDragPreviewExpanded(false);
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+      }
+      frameRef.current = window.requestAnimationFrame(() => {
+        setIsDragPreviewExpanded(true);
+      });
+    }
+  };
+
+  const handlePointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    const start = startRef.current;
+    if (!start) {
+      return;
+    }
+
+    const wasPreviewing = isDragPreviewVisible;
+    startRef.current = null;
+    releasePointerCapture(event);
+    event.stopPropagation();
+
+    if (wasPreviewing) {
+      event.preventDefault();
+      closeDragPreview();
+      return;
+    }
+
+    onToggleExpand();
+  };
+
+  const handlePointerCancel = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!startRef.current) {
+      return;
+    }
+
+    startRef.current = null;
+    releasePointerCapture(event);
+    closeDragPreview();
+  };
+
+  return {
+    dragOffset,
+    handlePointerCancel,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    isDragPreviewExpanded,
+    isDragPreviewVisible,
+  };
 }
 
 function formatDuration(seconds: number): string {
@@ -240,6 +366,7 @@ export function VideoResultStack({
 }: VideoResultStackProps) {
   const { t } = useTranslation();
   const { isMotionVisible, motionExpanded } = useStackMotion(isExpanded);
+  const dragPreview = useStackDragPreview(isExpanded, isMotionVisible, onToggleExpand);
 
   if (variants.length === 0) {
     return null;
@@ -290,13 +417,14 @@ export function VideoResultStack({
           STACK_VIEW_MOTION_CLASS,
           isExpanded || isMotionVisible
             ? 'pointer-events-none scale-[0.985] opacity-0'
-            : 'cursor-pointer scale-100 opacity-100',
+            : dragPreview.isDragPreviewVisible
+              ? 'cursor-grabbing scale-[0.995] opacity-40'
+              : 'cursor-grab scale-100 opacity-100',
         ].join(' ')}
-        onClick={(event) => {
-          if (isExpanded) return;
-          event.stopPropagation();
-          onToggleExpand();
-        }}
+        onPointerCancel={dragPreview.handlePointerCancel}
+        onPointerDown={dragPreview.handlePointerDown}
+        onPointerMove={dragPreview.handlePointerMove}
+        onPointerUp={dragPreview.handlePointerUp}
         onKeyDown={(event) => {
           if (isExpanded) return;
           if (event.key === 'Enter' || event.key === ' ') {
@@ -336,18 +464,25 @@ export function VideoResultStack({
           })}
       </div>
 
-      {isMotionVisible ? (
+      {isMotionVisible || dragPreview.isDragPreviewVisible ? (
         <div className="pointer-events-none absolute inset-0 z-50 overflow-visible">
           {variants.map((variant, index) => {
             const thumbnailUrl = resolveImageDisplayUrl(variant.thumbnailRef);
+            const isDragPreview = dragPreview.isDragPreviewVisible;
             return (
               <div
                 key={`motion-${variant.variantId}`}
                 className="absolute left-0 top-0 overflow-hidden rounded-[10px] border bg-bg-dark"
                 style={{
-                  ...getMotionCardStyle(index, selectedIndex, variants.length, motionExpanded),
+                  ...getMotionCardStyle(
+                    index,
+                    selectedIndex,
+                    variants.length,
+                    isDragPreview ? dragPreview.isDragPreviewExpanded : motionExpanded,
+                    isDragPreview ? dragPreview.dragOffset : ZERO_OFFSET
+                  ),
                   borderColor: index === selectedIndex ? 'rgba(59,130,246,0.42)' : 'rgba(255,255,255,0.08)',
-                  boxShadow: STACK_LAYER_SHADOW,
+                  boxShadow: isDragPreview ? '0 10px 32px rgba(0,0,0,0.32)' : STACK_LAYER_SHADOW,
                 }}
               >
                 {thumbnailUrl ? (
@@ -355,7 +490,12 @@ export function VideoResultStack({
                 ) : (
                   <PendingThumbnail label={labels.missingThumbnail} />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-b from-black/12 via-transparent to-black/32" />
+                <div
+                  className={[
+                    'absolute inset-0 bg-gradient-to-b from-black/12 via-transparent to-black/32',
+                    isDragPreview ? 'ring-1 ring-white/10' : '',
+                  ].join(' ')}
+                />
               </div>
             );
           })}
@@ -366,7 +506,7 @@ export function VideoResultStack({
         className={[
           'relative grid grid-cols-2 gap-2 p-2',
           STACK_VIEW_MOTION_CLASS,
-          isExpanded && !isMotionVisible
+          isExpanded && !isMotionVisible && !dragPreview.isDragPreviewVisible
             ? 'translate-y-0 scale-100 opacity-100'
             : 'pointer-events-none translate-y-2 scale-[0.985] opacity-0',
         ].join(' ')}
