@@ -1,4 +1,4 @@
-import { Check, Play } from 'lucide-react';
+import { Check, Loader2, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { resolveImageDisplayUrl } from '@/features/canvas/application/imageData';
@@ -39,6 +39,18 @@ function formatDuration(seconds: number): string {
   return `${seconds}s`;
 }
 
+function PendingThumbnail({ label }: { label: string }) {
+  return (
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[rgba(255,255,255,0.035)]">
+      <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,0.045)_42%,rgba(255,255,255,0.09)_50%,rgba(255,255,255,0.045)_58%,transparent_100%)] bg-[length:220%_100%] animate-[pulse_1.6s_ease-in-out_infinite]" />
+      <div className="relative flex items-center gap-2 rounded-full border border-[rgba(255,255,255,0.12)] bg-black/24 px-3 py-1.5 text-[11px] font-medium text-text-muted">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-accent/80" />
+        <span>{label}</span>
+      </div>
+    </div>
+  );
+}
+
 function VariantCard({
   variant,
   index,
@@ -56,7 +68,7 @@ function VariantCard({
       role="button"
       tabIndex={0}
       className={[
-        'group/card relative aspect-video overflow-hidden rounded-lg border bg-bg-dark text-left shadow-sm transition-all duration-150',
+        'group/card relative aspect-video overflow-hidden rounded-lg border bg-bg-dark text-left shadow-sm outline-none transition-all duration-150 focus-visible:border-accent/70',
         isSelected
           ? 'border-accent shadow-[0_0_0_1px_rgba(59,130,246,0.34)]'
           : 'border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.24)]',
@@ -76,12 +88,10 @@ function VariantCard({
       {thumbnailUrl ? (
         <img src={thumbnailUrl} alt={labels.thumbnailAlt} className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
-          {labels.missingThumbnail}
-        </div>
+        <PendingThumbnail label={labels.missingThumbnail} />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/46 via-transparent to-black/52" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/42 via-transparent to-black/60" />
 
       {isSelected ? (
         <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white shadow-lg">
@@ -89,18 +99,18 @@ function VariantCard({
         </span>
       ) : null}
 
-      <span className="absolute right-1 top-1 max-w-[calc(100%-2.25rem)] truncate rounded-md bg-black/62 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm">
+      <span className="absolute right-1 top-1 max-w-[calc(100%-2.25rem)] truncate rounded-md border border-white/10 bg-black/64 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm">
         {modelName}
       </span>
 
-      <span className="absolute bottom-1 left-1 rounded-md bg-black/62 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm">
+      <span className="absolute bottom-1 left-1 rounded-md border border-white/10 bg-black/64 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm">
         {formatDuration(variant.videoDurationSeconds)}
       </span>
 
       <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 transition-opacity duration-150 group-hover/card:opacity-100">
         <button
           type="button"
-          className="inline-flex h-6 items-center rounded-md border border-[rgba(255,255,255,0.14)] bg-black/68 px-2 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-black/82"
+          className="inline-flex h-6 items-center rounded-md border border-[rgba(255,255,255,0.16)] bg-black/72 px-2 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-black/86"
           onClick={(event) => {
             event.stopPropagation();
             onPreview(index);
@@ -110,7 +120,7 @@ function VariantCard({
         </button>
         <button
           type="button"
-          className="inline-flex h-6 items-center rounded-md border border-accent/40 bg-accent/84 px-2 text-[10px] font-medium text-white shadow-sm transition-colors hover:bg-accent"
+          className="inline-flex h-6 items-center rounded-md border border-accent/40 bg-accent/86 px-2 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-accent"
           onClick={(event) => {
             event.stopPropagation();
             onAdopt(index);
@@ -204,13 +214,14 @@ export function VideoResultStack({
             <div
               key={`${variant.variantId}-${layerIndex}`}
               className={[
-                'absolute inset-0 overflow-hidden rounded-[inherit] border border-[rgba(255,255,255,0.12)] bg-bg-dark shadow-lg transition-transform duration-150',
+                'absolute inset-0 overflow-hidden rounded-[inherit] border bg-bg-dark shadow-lg transition-transform duration-150',
                 isTopLayer ? 'z-30' : 'pointer-events-none',
               ].join(' ')}
               style={{
                 zIndex: 30 - layerIndex,
-                opacity: 1 - layerIndex * 0.18,
-                transform: `translate(${layerIndex * 6}px, ${layerIndex * 4}px) rotate(${layerIndex * 2}deg)`,
+                borderColor: layerIndex === 0 ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.1)',
+                opacity: 1 - layerIndex * 0.12,
+                transform: `translate(${layerIndex * 4}px, ${layerIndex * 3}px) rotate(${layerIndex * 1.2}deg)`,
               }}
             >
               {thumbnailUrl ? (
@@ -220,9 +231,7 @@ export function VideoResultStack({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
-                  {t('node.videoResult.missingThumbnail')}
-                </div>
+                <PendingThumbnail label={t('node.videoResult.missingThumbnail')} />
               )}
 
               {isTopLayer ? (
