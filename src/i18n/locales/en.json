@@ -248,6 +248,8 @@
       "empty": "No adopted image yet",
       "download": "Download",
       "preview": "Preview",
+      "collapse": "Collapse",
+      "stackCount": "{{count}} stacked",
       "trace": "Trace",
       "info": "Info",
       "model": "Model",

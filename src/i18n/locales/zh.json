@@ -275,6 +275,8 @@
       "empty": "尚无已采纳的图片",
       "download": "下载",
       "preview": "预览",
+      "collapse": "收起",
+      "stackCount": "{{count}} 个堆叠",
       "trace": "溯源",
       "info": "信息",
       "model": "模型",

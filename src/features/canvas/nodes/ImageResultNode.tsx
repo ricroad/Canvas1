@@ -1,14 +1,12 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Position, type NodeProps, useUpdateNodeInternals } from '@xyflow/react';
 import {
-  Check,
   ChevronDown,
   CornerUpLeft,
   Download,
   Image as ImageIcon,
   Info,
   Maximize2,
-  Trash2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +14,7 @@ import { resolveImageDisplayUrl } from '@/features/canvas/application/imageData'
 import { nodeCatalog } from '@/features/canvas/application/nodeCatalog';
 import { type ImageResultNodeData, isImageResultNode } from '@/features/canvas/domain/canvasNodes';
 import { getConnectMenuNodeTypes } from '@/features/canvas/domain/nodeRegistry';
+import { ImageResultStack } from '@/features/canvas/nodes/ImageResultStack';
 import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import {
   NODE_RESULT_HANDLE_CLASS,
@@ -46,7 +45,6 @@ type ImageResultNodeProps = NodeProps & {
 };
 
 const IMAGE_RESULT_CONTENT_HEIGHT = 280;
-const IMAGE_RESULT_DROPDOWN_COLUMNS = 2;
 
 function downloadResolvedFile(url: string, fileName: string) {
   const anchor = document.createElement('a');
@@ -87,8 +85,15 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
     prompt?: string;
     autoRetryCount?: number;
   };
-  const [isVariantMenuOpen, setIsVariantMenuOpen] = useState(false);
+  const [isStackExpanded, setIsStackExpanded] = useState(false);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
+  const expandedGridHeight = useMemo(() => {
+    const rows = Math.ceil(data.variants.length / 2);
+    return rows * 96 + (rows - 1) * 8 + 16;
+  }, [data.variants.length]);
+  const hasMultipleVariants = data.variants.length > 1;
+  const dynamicContentHeight =
+    hasMultipleVariants && isStackExpanded ? Math.min(expandedGridHeight, 360) : IMAGE_RESULT_CONTENT_HEIGHT;
   const quickCreateRef = useRef<HTMLDivElement | null>(null);
   const quickCreateItems = useMemo(
     () => getConnectMenuNodeTypes('source').map((type) => nodeCatalog.getDefinition(type)),
@@ -97,7 +102,13 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [id, updateNodeInternals]);
+  }, [dynamicContentHeight, id, updateNodeInternals]);
+
+  useEffect(() => {
+    if (data.variants.length < 2 && isStackExpanded) {
+      setIsStackExpanded(false);
+    }
+  }, [data.variants.length, isStackExpanded]);
 
   useEffect(() => {
     if (!isQuickCreateOpen) {
@@ -123,12 +134,14 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
     downloadResolvedFile(imageUrl, suggestedName);
   };
 
-  const openPreview = () => {
-    if (!imageUrl) {
+  const openPreview = (variantIndex = data.selectedVariantIndex) => {
+    const previewVariant = data.variants[variantIndex] ?? activeVariant;
+    if (!previewVariant?.imageUrl) {
       return;
     }
+    const previewUrl = resolveImageDisplayUrl(previewVariant.imageUrl);
     openImageViewer(
-      imageUrl,
+      previewUrl,
       data.variants.map((variant) => resolveImageDisplayUrl(variant.imageUrl))
     );
   };
@@ -141,7 +154,7 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
         VIDEO_RESULT_NODE_SHELL_CLASS,
         selected ? VIDEO_RESULT_NODE_SELECTED_CLASS : VIDEO_RESULT_NODE_HOVER_CLASS,
       ].join(' ')}
-      style={{ width: `${VIDEO_RESULT_BASE_WIDTH}px`, height: `${VIDEO_RESULT_TOP_BAR_HEIGHT + IMAGE_RESULT_CONTENT_HEIGHT}px` }}
+      style={{ width: `${VIDEO_RESULT_BASE_WIDTH}px`, height: `${VIDEO_RESULT_TOP_BAR_HEIGHT + dynamicContentHeight}px` }}
       onClick={() => setSelectedNode(id)}
     >
       <div
@@ -159,11 +172,16 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
           className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-text-dark transition-colors hover:bg-white/8"
           onClick={(event) => {
             event.stopPropagation();
-            setIsVariantMenuOpen((previous) => !previous);
+            if (hasMultipleVariants) {
+              setIsStackExpanded((previous) => !previous);
+            }
           }}
+          title={hasMultipleVariants ? t('node.imageResult.stackCount', { count: data.variants.length }) : undefined}
         >
-          <span>{data.selectedVariantIndex + 1}</span>
-          <ChevronDown className="h-3.5 w-3.5" />
+          <span>{isStackExpanded && hasMultipleVariants ? t('node.imageResult.collapse') : data.variants.length}</span>
+          <ChevronDown
+            className={['h-3.5 w-3.5 transition-transform', isStackExpanded ? 'rotate-180' : ''].join(' ')}
+          />
         </button>
 
         <div ref={quickCreateRef} className="absolute right-12 top-0 z-40">
@@ -202,98 +220,57 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
           ) : null}
         </div>
 
-        {isVariantMenuOpen ? (
-          <div
-            className={`absolute right-1 top-[calc(100%+8px)] z-40 w-[248px] p-2 ${VIDEO_RESULT_PANEL_CLASS}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div
-              className="grid gap-2"
-              style={{ gridTemplateColumns: `repeat(${IMAGE_RESULT_DROPDOWN_COLUMNS}, minmax(0, 1fr))` }}
-            >
-              {data.variants.map((variant, variantIndex) => {
-                const itemImageUrl = resolveImageDisplayUrl(variant.imageUrl);
-                const isActive = variantIndex === data.selectedVariantIndex;
-                return (
-                  <div
-                    key={variant.variantId}
-                    className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-bg-dark/72"
-                  >
-                    <button
-                      type="button"
-                      className="relative block w-full"
-                      onClick={() => {
-                        void selectVariant({ resultNodeId: id, variantIndex });
-                        setIsVariantMenuOpen(false);
-                      }}
-                    >
-                      <img
-                        src={itemImageUrl}
-                        alt={`${t('node.imageResult.label')} ${variantIndex + 1}`}
-                        className="h-20 w-full object-cover"
-                      />
-                      {isActive ? (
-                        <span className="absolute left-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white">
-                          <Check className="h-3 w-3" />
-                        </span>
-                      ) : null}
-                    </button>
-                    <div className="flex items-center justify-between px-2 py-1.5 text-[10px] text-text-muted">
-                      <span>#{variantIndex + 1}</span>
-                      <button
-                        type="button"
-                        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-red-500/16 hover:text-red-200"
-                        onClick={() => {
-                          void deleteVariant({ resultNodeId: id, variantIndex });
-                          if (variantIndex === data.selectedVariantIndex) {
-                            setIsVariantMenuOpen(false);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+      </div>
+
+      {hasMultipleVariants ? (
+        <ImageResultStack
+          variants={data.variants}
+          selectedIndex={data.selectedVariantIndex}
+          contentHeight={dynamicContentHeight}
+          isExpanded={isStackExpanded}
+          onToggleExpand={() => setIsStackExpanded((previous) => !previous)}
+          onSelect={(variantIndex) => void selectVariant({ resultNodeId: id, variantIndex })}
+          onPreview={(variantIndex) => {
+            void selectVariant({ resultNodeId: id, variantIndex });
+            openPreview(variantIndex);
+          }}
+          onDelete={(variantIndex) => void deleteVariant({ resultNodeId: id, variantIndex })}
+        />
+      ) : (
+        <div
+          className={`relative flex-1 overflow-hidden ${VIDEO_RESULT_SURFACE_CLASS}`}
+          style={{ height: `${IMAGE_RESULT_CONTENT_HEIGHT}px` }}
+        >
+          {imageUrl ? (
+            <CanvasNodeImage
+              src={imageUrl}
+              alt={t('node.imageResult.imageAlt')}
+              viewerSourceUrl={imageUrl}
+              viewerImageList={data.variants.map((variant) => resolveImageDisplayUrl(variant.imageUrl))}
+              className="h-full w-full object-contain"
+            />
+          ) : generationError ? (
+            <div className="flex h-full w-full items-center justify-center px-5 text-center text-xs text-red-200">
+              {generationError}
             </div>
-          </div>
-        ) : null}
-      </div>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+              {isGenerating ? t('node.imageResult.generating') : t('node.imageResult.empty')}
+            </div>
+          )}
 
-      <div
-        className={`relative flex-1 overflow-hidden ${VIDEO_RESULT_SURFACE_CLASS}`}
-        style={{ height: `${IMAGE_RESULT_CONTENT_HEIGHT}px` }}
-      >
-        {imageUrl ? (
-          <CanvasNodeImage
-            src={imageUrl}
-            alt={t('node.imageResult.imageAlt')}
-            viewerSourceUrl={imageUrl}
-            viewerImageList={data.variants.map((variant) => resolveImageDisplayUrl(variant.imageUrl))}
-            className="h-full w-full object-contain"
-          />
-        ) : generationError ? (
-          <div className="flex h-full w-full items-center justify-center px-5 text-center text-xs text-red-200">
-            {generationError}
-          </div>
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
-            {isGenerating ? t('node.imageResult.generating') : t('node.imageResult.empty')}
-          </div>
-        )}
-
-        {imageUrl ? (
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/0 transition-colors duration-150 group-hover:bg-black/6"
-            onClick={(event) => {
-              event.stopPropagation();
-              openPreview();
-            }}
-          />
-        ) : null}
-      </div>
+          {imageUrl ? (
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/0 transition-colors duration-150 group-hover:bg-black/6"
+              onClick={(event) => {
+                event.stopPropagation();
+                openPreview();
+              }}
+            />
+          ) : null}
+        </div>
+      )}
 
       <div
         className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
