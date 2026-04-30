@@ -48,6 +48,8 @@ const VARIANT_ACTION_CLASS =
 const VARIANT_PRIMARY_ACTION_CLASS =
   'inline-flex h-6 items-center rounded-md border border-accent/30 bg-accent/70 px-2 text-[10px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-accent/90';
 const STACK_LAYER_SHADOW = '0 2px 14px rgba(0,0,0,0.24)';
+const STACK_CONTAINER_MOTION_CLASS = 'transition-[height,max-height] duration-200 ease-out';
+const STACK_VIEW_MOTION_CLASS = 'transition-[opacity,transform] duration-200 ease-out';
 
 function formatDuration(seconds: number): string {
   return `${seconds}s`;
@@ -171,37 +173,12 @@ export function VideoResultStack({
     );
   }
 
-  if (isExpanded) {
-    const labels = {
-      preview: t('node.videoResult.preview'),
-      adopt: t('node.videoResult.adopt'),
-      thumbnailAlt: t('node.videoResult.thumbnailAlt'),
-      missingThumbnail: t('node.videoResult.missingThumbnail'),
-    };
-
-    return (
-      <div
-        className={`relative overflow-y-auto ${VIDEO_RESULT_SURFACE_CLASS}`}
-        style={{ height: `${contentHeight}px`, maxHeight: `${contentHeight}px` }}
-        data-expanded={isExpanded}
-      >
-        <div className="grid grid-cols-2 gap-2 p-2">
-          {variants.map((variant, index) => (
-            <VariantCard
-              key={variant.variantId}
-              variant={variant}
-              index={index}
-              isSelected={index === selectedIndex}
-              onSelect={onSelect}
-              onPreview={onPreview}
-              onAdopt={onAdopt}
-              labels={labels}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const labels = {
+    preview: t('node.videoResult.preview'),
+    adopt: t('node.videoResult.adopt'),
+    thumbnailAlt: t('node.videoResult.thumbnailAlt'),
+    missingThumbnail: t('node.videoResult.missingThumbnail'),
+  };
 
   const selectedVariant = variants[selectedIndex] ?? variants[0];
   const deckVariants = [selectedVariant];
@@ -212,58 +189,99 @@ export function VideoResultStack({
 
   return (
     <div
-      className={`relative overflow-visible ${VIDEO_RESULT_SURFACE_CLASS}`}
-      style={{ height: `${contentHeight}px` }}
+      className={[
+        'relative',
+        isExpanded ? 'overflow-y-auto' : 'overflow-visible',
+        STACK_CONTAINER_MOTION_CLASS,
+        VIDEO_RESULT_SURFACE_CLASS,
+      ].join(' ')}
+      style={{ height: `${contentHeight}px`, maxHeight: `${contentHeight}px` }}
       data-expanded={isExpanded}
     >
-      {deckVariants
-        .map((variant, layerIndex) => ({ variant, layerIndex }))
-        .reverse()
-        .map(({ variant, layerIndex }) => {
-          const thumbnailUrl = resolveImageDisplayUrl(variant.thumbnailRef);
-          const isTopLayer = layerIndex === 0;
-          return (
-            <div
-              key={`${variant.variantId}-${layerIndex}`}
-              className={[
-                'absolute inset-0 overflow-hidden rounded-[inherit] border bg-bg-dark transition-transform duration-150',
-                isTopLayer ? 'z-30' : 'pointer-events-none',
-              ].join(' ')}
-              style={{
-                zIndex: 30 - layerIndex,
-                borderColor: layerIndex === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
-                boxShadow: STACK_LAYER_SHADOW,
-                opacity: 1 - layerIndex * 0.08,
-                transform: `translate(${layerIndex * 4}px, ${layerIndex * 3}px) rotate(${layerIndex * 1.2}deg)`,
-              }}
-            >
-              {thumbnailUrl ? (
-                <img
-                  src={thumbnailUrl}
-                  alt={t('node.videoResult.thumbnailAlt')}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <PendingThumbnail label={t('node.videoResult.missingThumbnail')} />
-              )}
+      <div
+        className={[
+          'absolute inset-0',
+          STACK_VIEW_MOTION_CLASS,
+          isExpanded ? 'pointer-events-none scale-[0.985] opacity-0' : 'scale-100 opacity-100',
+        ].join(' ')}
+      >
+        {deckVariants
+          .map((variant, layerIndex) => ({ variant, layerIndex }))
+          .reverse()
+          .map(({ variant, layerIndex }) => {
+            const thumbnailUrl = resolveImageDisplayUrl(variant.thumbnailRef);
+            const isTopLayer = layerIndex === 0;
+            return (
+              <div
+                key={`${variant.variantId}-${layerIndex}`}
+                className={[
+                  'absolute inset-0 overflow-hidden rounded-[inherit] border bg-bg-dark transition-[opacity,transform] duration-200 ease-out',
+                  isTopLayer ? 'z-30' : 'pointer-events-none',
+                ].join(' ')}
+                style={{
+                  zIndex: 30 - layerIndex,
+                  borderColor: layerIndex === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
+                  boxShadow: STACK_LAYER_SHADOW,
+                  opacity: (1 - layerIndex * 0.08) * (isExpanded ? 0 : 1),
+                  transform: isExpanded
+                    ? `translate(${layerIndex * 2}px, ${layerIndex * 1.5}px) rotate(0deg) scale(0.98)`
+                    : `translate(${layerIndex * 4}px, ${layerIndex * 3}px) rotate(${layerIndex * 1.2}deg) scale(1)`,
+                }}
+              >
+                {thumbnailUrl ? (
+                  <img src={thumbnailUrl} alt={labels.thumbnailAlt} className="h-full w-full object-cover" />
+                ) : (
+                  <PendingThumbnail label={labels.missingThumbnail} />
+                )}
 
-              {isTopLayer ? (
-                <button
-                  type="button"
-                  className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity duration-150 hover:opacity-100"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onToggleExpand();
-                  }}
-                >
-                  <span className={`${VIDEO_RESULT_OVERLAY_BUTTON_CLASS} h-14 w-14`}>
-                    <Play className="ml-1 h-6 w-6" />
-                  </span>
-                </button>
-              ) : null}
-            </div>
-          );
-        })}
+                {isTopLayer ? (
+                  <button
+                    type="button"
+                    className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity duration-150 hover:opacity-100"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleExpand();
+                    }}
+                  >
+                    <span className={`${VIDEO_RESULT_OVERLAY_BUTTON_CLASS} h-14 w-14`}>
+                      <Play className="ml-1 h-6 w-6" />
+                    </span>
+                  </button>
+                ) : null}
+              </div>
+            );
+          })}
+      </div>
+
+      <div
+        className={[
+          'relative grid grid-cols-2 gap-2 p-2',
+          STACK_VIEW_MOTION_CLASS,
+          isExpanded ? 'translate-y-0 scale-100 opacity-100' : 'pointer-events-none translate-y-2 scale-[0.985] opacity-0',
+        ].join(' ')}
+      >
+        {variants.map((variant, index) => (
+          <div
+            key={variant.variantId}
+            className="transition-[opacity,transform] duration-200 ease-out"
+            style={{
+              transitionDelay: isExpanded ? `${Math.min(index, 5) * 24}ms` : '0ms',
+              opacity: isExpanded ? 1 : 0,
+              transform: isExpanded ? 'translateY(0) scale(1)' : 'translateY(6px) scale(0.98)',
+            }}
+          >
+            <VariantCard
+              variant={variant}
+              index={index}
+              isSelected={index === selectedIndex}
+              onSelect={onSelect}
+              onPreview={onPreview}
+              onAdopt={onAdopt}
+              labels={labels}
+            />
+          </div>
+        ))}
+      </div>
 
       <span className="pointer-events-none absolute right-2 top-2 z-40 inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.12)] bg-black/55 px-2 text-[11px] font-semibold text-white/95 shadow-[0_2px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm">
         {variants.length}
