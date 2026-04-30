@@ -238,6 +238,7 @@
       "discardAll": "Discard all",
       "previousAccepted": "Previously adopted",
       "billingNotice": "Note: discarded videos still consume Kling quota",
+      "collapse": "Collapse",
       "stackCount": "{{count}} stacked"
     },
     "imageResult": {

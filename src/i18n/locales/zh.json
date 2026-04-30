@@ -265,6 +265,7 @@
       "discardAll": "全部丢弃",
       "previousAccepted": "此前已采纳",
       "billingNotice": "提示：未采纳的视频仍会消耗 Kling 额度",
+      "collapse": "收起",
       "stackCount": "{{count}} 个堆叠"
     },
     "imageResult": {

@@ -1,16 +1,10 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Position, useUpdateNodeInternals, type NodeProps } from '@xyflow/react';
 import {
-  Check,
   ChevronDown,
   Clapperboard,
-  CornerUpLeft,
-  Download,
-  Info,
-  Maximize2,
   Play,
-  Trash2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,12 +17,12 @@ import {
   isVideoGenNode,
 } from '@/features/canvas/domain/canvasNodes';
 import { getConnectMenuNodeTypes } from '@/features/canvas/domain/nodeRegistry';
+import { VideoResultStack } from '@/features/canvas/nodes/VideoResultStack';
+import { VideoResultToolbar } from '@/features/canvas/nodes/VideoResultToolbar';
 import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import {
   NODE_RESULT_HANDLE_CLASS,
   VIDEO_RESULT_BASE_WIDTH,
-  VIDEO_RESULT_INFO_LABEL_CLASS,
-  VIDEO_RESULT_INFO_VALUE_CLASS,
   VIDEO_RESULT_NODE_HOVER_CLASS,
   VIDEO_RESULT_NODE_RADIUS_CLASS,
   VIDEO_RESULT_NODE_SELECTED_CLASS,
@@ -39,11 +33,6 @@ import {
   VIDEO_RESULT_TOP_BAR_CLASS,
   VIDEO_RESULT_TOP_BAR_HEIGHT,
 } from '@/features/canvas/ui/nodeControlStyles';
-import {
-  NODE_HOVER_TOOLBAR_BUTTON_CLASS,
-  NODE_HOVER_TOOLBAR_PANEL_CLASS,
-  NODE_HOVER_TOOLBAR_TOP,
-} from '@/features/canvas/ui/nodeToolbarConfig';
 import { useCanvasStore } from '@/stores/canvasStore';
 
 type VideoResultNodeProps = NodeProps & {
@@ -51,8 +40,6 @@ type VideoResultNodeProps = NodeProps & {
   data: VideoResultNodeData;
   selected?: boolean;
 };
-
-const VIDEO_RESULT_DROPDOWN_COLUMNS = 2;
 
 function parseAspectRatio(aspectRatio: string | null | undefined): { width: number; height: number } {
   if (!aspectRatio) {
@@ -88,7 +75,7 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
   const setSelectedNode = useCanvasStore((state) => state.setSelectedNode);
   const addConnectedNode = useCanvasStore((state) => state.addConnectedNode);
   const selectVariant = useCanvasStore((state) => state.selectVariant);
-  const deleteVariant = useCanvasStore((state) => state.deleteVariant);
+  const updateNodeData = useCanvasStore((state) => state.updateNodeData);
   const activeVariant = useMemo(() => resolveSelectedVariant(data), [data]);
   const sourceGenNode = useMemo(
     () => nodes.find((node) => node.id === data.sourceGenNodeId) ?? null,
@@ -104,7 +91,17 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
   const displaySnapshotParams = activeVariant?.snapshotParams ?? data.snapshotParams;
   const ratio = useMemo(() => parseAspectRatio(aspectRatio), [aspectRatio]);
   const contentHeight = Math.round((VIDEO_RESULT_BASE_WIDTH * ratio.height) / ratio.width);
-  const nodeHeight = VIDEO_RESULT_TOP_BAR_HEIGHT + contentHeight;
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const [isStackExpanded, setIsStackExpanded] = useState(false);
+  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
+  const expandedGridHeight = useMemo(() => {
+    const rows = Math.ceil(data.variants.length / 2);
+    return rows * 96 + (rows - 1) * 8 + 16;
+  }, [data.variants.length]);
+  const dynamicContentHeight =
+    data.variants.length > 1 && isStackExpanded ? Math.min(expandedGridHeight, 360) : contentHeight;
+  const nodeHeight = VIDEO_RESULT_TOP_BAR_HEIGHT + dynamicContentHeight;
+  const hasMultipleVariants = data.variants.length > 1;
   const thumbnailUrl = useMemo(
     () => (activeVariant?.thumbnailRef ? resolveImageDisplayUrl(activeVariant.thumbnailRef) : null),
     [activeVariant?.thumbnailRef]
@@ -113,9 +110,6 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
     () => (activeVariant?.videoRef ? resolveImageDisplayUrl(activeVariant.videoRef) : null),
     [activeVariant?.videoRef]
   );
-  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
-  const [isVariantMenuOpen, setIsVariantMenuOpen] = useState(false);
-  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const playerVideoRef = useRef<HTMLVideoElement | null>(null);
   const quickCreateRef = useRef<HTMLDivElement | null>(null);
   const quickCreateItems = useMemo(
@@ -125,7 +119,19 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
 
   useEffect(() => {
     updateNodeInternals(id);
-  }, [contentHeight, id, updateNodeInternals]);
+  }, [dynamicContentHeight, id, updateNodeInternals]);
+
+  useEffect(() => {
+    if (data.variants.length < 2 && isStackExpanded) {
+      setIsStackExpanded(false);
+    }
+  }, [data.variants.length, isStackExpanded]);
+
+  useEffect(() => {
+    if (isStackExpanded && isQuickCreateOpen) {
+      setIsQuickCreateOpen(false);
+    }
+  }, [isQuickCreateOpen, isStackExpanded]);
 
   useEffect(() => {
     if (!isQuickCreateOpen) {
@@ -175,6 +181,25 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
     });
   };
 
+  const handleAdopt = useCallback(
+    (variantIndex: number) => {
+      const kept = data.variants[variantIndex];
+      if (!kept) {
+        return;
+      }
+      updateNodeData(id, {
+        variants: [kept],
+        selectedVariantIndex: 0,
+        stack: [kept],
+        activeIndex: 0,
+        pendingCandidates: null,
+        candidateSelection: [],
+      });
+      setIsStackExpanded(false);
+    },
+    [data.variants, id, updateNodeData]
+  );
+
   return (
     <div
       className={[
@@ -201,11 +226,16 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
           className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] text-text-dark transition-colors hover:bg-white/8"
           onClick={(event) => {
             event.stopPropagation();
-            setIsVariantMenuOpen((previous) => !previous);
+            if (hasMultipleVariants) {
+              setIsStackExpanded((previous) => !previous);
+            }
           }}
+          title={hasMultipleVariants ? t('node.videoResult.stackCount', { count: data.variants.length }) : undefined}
         >
-          <span>{data.selectedVariantIndex + 1}</span>
-          <ChevronDown className="h-3.5 w-3.5" />
+          <span>{isStackExpanded && hasMultipleVariants ? t('node.videoResult.collapse') : data.variants.length}</span>
+          <ChevronDown
+            className={['h-3.5 w-3.5 transition-transform', isStackExpanded ? 'rotate-180' : ''].join(' ')}
+          />
         </button>
 
         <div ref={quickCreateRef} className="absolute right-12 top-0 z-40">
@@ -244,150 +274,58 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
           ) : null}
         </div>
 
-        {isVariantMenuOpen ? (
-          <div
-            className={`absolute right-1 top-[calc(100%+8px)] z-40 w-[248px] p-2 ${VIDEO_RESULT_PANEL_CLASS}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div
-              className="grid gap-2"
-              style={{ gridTemplateColumns: `repeat(${VIDEO_RESULT_DROPDOWN_COLUMNS}, minmax(0, 1fr))` }}
-            >
-              {data.variants.map((variant, variantIndex) => {
-                const itemThumbnailUrl = resolveImageDisplayUrl(variant.thumbnailRef);
-                const isActive = variantIndex === data.selectedVariantIndex;
-                return (
-                  <div
-                    key={variant.variantId}
-                    className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] bg-bg-dark/72"
-                  >
-                    <button
-                      type="button"
-                      className="relative block w-full"
-                      onClick={() => {
-                        void selectVariant({ resultNodeId: id, variantIndex });
-                        setIsVariantMenuOpen(false);
-                      }}
-                    >
-                      <img
-                        src={itemThumbnailUrl}
-                        alt={`${t('node.videoResult.label')} ${variantIndex + 1}`}
-                        className="h-20 w-full object-cover"
-                      />
-                      {isActive ? (
-                        <span className="absolute left-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white">
-                          <Check className="h-3 w-3" />
-                        </span>
-                      ) : null}
-                    </button>
-                    <div className="flex items-center justify-between px-2 py-1.5 text-[10px] text-text-muted">
-                      <span>#{variantIndex + 1}</span>
-                      <button
-                        type="button"
-                        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-red-500/16 hover:text-red-200"
-                        onClick={() => {
-                          void deleteVariant({ resultNodeId: id, variantIndex });
-                          if (variantIndex === data.selectedVariantIndex) {
-                            setIsVariantMenuOpen(false);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
       </div>
 
-      <div
-        className={`relative flex-1 overflow-hidden ${VIDEO_RESULT_SURFACE_CLASS}`}
-        style={{ height: `${contentHeight}px` }}
-      >
-        {thumbnailUrl ? (
-          <img src={thumbnailUrl} alt={t('node.videoResult.thumbnailAlt')} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
-            {t('node.videoResult.missingThumbnail')}
-          </div>
-        )}
-
-        <button
-          type="button"
-          className="absolute inset-0 flex items-center justify-center bg-black/14 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-          onClick={(event) => {
-            event.stopPropagation();
+      {hasMultipleVariants ? (
+        <VideoResultStack
+          variants={data.variants}
+          selectedIndex={data.selectedVariantIndex}
+          contentHeight={dynamicContentHeight}
+          isExpanded={isStackExpanded}
+          onToggleExpand={() => setIsStackExpanded((previous) => !previous)}
+          onSelect={(variantIndex) => void selectVariant({ resultNodeId: id, variantIndex })}
+          onPreview={(variantIndex) => {
+            void selectVariant({ resultNodeId: id, variantIndex });
             setIsPlayerOpen(true);
           }}
+          onAdopt={handleAdopt}
+        />
+      ) : (
+        <div
+          className={`relative flex-1 overflow-hidden ${VIDEO_RESULT_SURFACE_CLASS}`}
+          style={{ height: `${contentHeight}px` }}
         >
-          <span className={`${VIDEO_RESULT_OVERLAY_BUTTON_CLASS} h-14 w-14`}>
-            <Play className="ml-1 h-6 w-6" />
-          </span>
-        </button>
-      </div>
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt={t('node.videoResult.thumbnailAlt')} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+              {t('node.videoResult.missingThumbnail')}
+            </div>
+          )}
 
-      <div
-        className="pointer-events-none absolute left-1/2 z-20 -translate-x-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-        style={{ top: `${NODE_HOVER_TOOLBAR_TOP}px` }}
-      >
-        <div className={NODE_HOVER_TOOLBAR_PANEL_CLASS} onClick={(event) => event.stopPropagation()}>
-          <button type="button" className={NODE_HOVER_TOOLBAR_BUTTON_CLASS} onClick={() => void handleDownload()}>
-            <Download className="h-3.5 w-3.5" />
-            <span>{t('node.videoResult.download')}</span>
-          </button>
-          <button type="button" className={NODE_HOVER_TOOLBAR_BUTTON_CLASS} onClick={() => void handleFullscreen()}>
-            <Maximize2 className="h-3.5 w-3.5" />
-            <span>{t('node.videoResult.fullscreen')}</span>
-          </button>
           <button
             type="button"
-            className={NODE_HOVER_TOOLBAR_BUTTON_CLASS}
-            onClick={() => setSelectedNode(data.sourceGenNodeId)}
+            className="absolute inset-0 flex items-center justify-center bg-black/14 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsPlayerOpen(true);
+            }}
           >
-            <CornerUpLeft className="h-3.5 w-3.5" />
-            <span>{t('node.videoResult.trace')}</span>
+            <span className={`${VIDEO_RESULT_OVERLAY_BUTTON_CLASS} h-14 w-14`}>
+              <Play className="ml-1 h-6 w-6" />
+            </span>
           </button>
-          <div className="group/info relative pointer-events-auto">
-            <button type="button" className={NODE_HOVER_TOOLBAR_BUTTON_CLASS}>
-              <Info className="h-3.5 w-3.5" />
-              <span>{t('node.videoResult.info')}</span>
-            </button>
-            <div className={`absolute right-0 top-[calc(100%+8px)] hidden w-[240px] p-3 group-hover/info:block ${VIDEO_RESULT_PANEL_CLASS}`}>
-              <div className="space-y-2">
-                <div>
-                  <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.model')}</div>
-                  <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>{displaySnapshotParams.modelId}</div>
-                </div>
-                <div>
-                  <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.duration')}</div>
-                  <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>{activeVariant?.videoDurationSeconds ?? data.snapshotParams.duration}s</div>
-                </div>
-                <div>
-                  <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.aspectRatio')}</div>
-                  <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>{aspectRatio}</div>
-                </div>
-                <div>
-                  <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.mode')}</div>
-                  <div className={VIDEO_RESULT_INFO_VALUE_CLASS}>
-                    {typeof displaySnapshotParams.extraParams?.mode === 'string'
-                      ? displaySnapshotParams.extraParams.mode
-                      : '-'}
-                  </div>
-                </div>
-                <div>
-                  <div className={VIDEO_RESULT_INFO_LABEL_CLASS}>{t('node.videoResult.prompt')}</div>
-                  <div className={`${VIDEO_RESULT_INFO_VALUE_CLASS} line-clamp-4 whitespace-pre-wrap break-words`}>
-                    {displaySnapshotParams.prompt || '-'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+      )}
+
+      <VideoResultToolbar
+        snapshotParams={displaySnapshotParams}
+        durationSeconds={activeVariant?.videoDurationSeconds ?? data.snapshotParams.duration}
+        aspectRatio={aspectRatio}
+        onDownload={handleDownload}
+        onFullscreen={handleFullscreen}
+        onTrace={() => setSelectedNode(data.sourceGenNodeId)}
+      />
 
       <MagneticHandle type="target" id="gen-input" position={Position.Left} className={NODE_RESULT_HANDLE_CLASS} />
       <MagneticHandle type="source" id="video-output" position={Position.Right} className={NODE_RESULT_HANDLE_CLASS} />
