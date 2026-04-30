@@ -5,6 +5,7 @@ import { useProjectStore } from '@/stores/projectStore';
 import { getConfiguredApiKeyCount, useSettingsStore } from '@/stores/settingsStore';
 import { UI_CONTENT_OVERLAY_INSET_CLASS } from '@/components/ui/motion';
 import { UiButton, UiSelect } from '@/components/ui/primitives';
+import { isTestProjectName, TEST_PROJECT_NAME } from '@/features/canvas/application/testProjectMode';
 import { MissingApiKeyHint } from '@/features/settings/MissingApiKeyHint';
 import { listModelProviders } from '@/features/canvas/models';
 import { RenameDialog } from './RenameDialog';
@@ -31,6 +32,15 @@ export function ProjectManager() {
     setEditingProjectId(null);
     setEditingProjectName('');
     setShowRenameDialog(true);
+  };
+
+  const handleOpenTestProject = () => {
+    const existing = projects.find((project) => isTestProjectName(project.name));
+    if (existing) {
+      openProject(existing.id);
+      return;
+    }
+    createProject(TEST_PROJECT_NAME);
   };
 
   const handleRenameClick = (id: string, name: string, e: React.MouseEvent) => {
@@ -102,10 +112,16 @@ export function ProjectManager() {
               </UiSelect>
             </div>
           </div>
-          <UiButton type="button" variant="primary" onClick={handleCreateProject} className="gap-2">
-            <Plus className="w-5 h-5" />
-            {t('project.newProject')}
-          </UiButton>
+          <div className="flex items-center gap-2">
+            <UiButton type="button" variant="muted" onClick={handleOpenTestProject} className="gap-2">
+              <FolderOpen className="w-5 h-5" />
+              {t('project.openTestProject')}
+            </UiButton>
+            <UiButton type="button" variant="primary" onClick={handleCreateProject} className="gap-2">
+              <Plus className="w-5 h-5" />
+              {t('project.newProject')}
+            </UiButton>
+          </div>
         </div>
 
         {configuredApiKeyCount === 0 && <MissingApiKeyHint className="mb-8" />}

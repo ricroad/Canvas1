@@ -12,7 +12,9 @@ import {
   type VideoGenNodeData,
 } from '@/features/canvas/domain/canvasNodes';
 import { resolveNodeDisplayName } from '@/features/canvas/domain/nodeDisplay';
+import { createMockVideoVariants } from '@/features/canvas/application/mockVideoGeneration';
 import { resolveImageDisplayUrl } from '@/features/canvas/application/imageData';
+import { isTestProjectName } from '@/features/canvas/application/testProjectMode';
 import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canvas/ui/NodeHeader';
 import { NodeResizeHandle } from '@/features/canvas/ui/NodeResizeHandle';
@@ -20,6 +22,7 @@ import { ModelParamsControls } from '@/features/canvas/ui/ModelParamsControls';
 import { UiButton, UiSwitch } from '@/components/ui';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useCopilotStore } from '@/stores/copilotStore';
+import { useProjectStore } from '@/stores/projectStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { canvasAiGateway } from '@/features/canvas/application/canvasServices';
 import { chooseVideoModel } from '@/features/canvas/application/videoModelDecision';
@@ -71,6 +74,8 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
   const edges = useCanvasStore((state) => state.edges);
   const setSelectedNode = useCanvasStore((state) => state.setSelectedNode);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
+  const deriveOrUpdateResultBatch = useCanvasStore((state) => state.deriveOrUpdateResultBatch);
+  const currentProjectName = useProjectStore((state) => state.currentProject?.name);
   const kling = useSettingsStore((state) => state.kling);
   const apiKeys = useSettingsStore((state) => state.apiKeys);
   const maxConcurrent = useSettingsStore((state) => state.videoConcurrency.maxConcurrent);
@@ -119,6 +124,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     () => inputSlotStates.find((slot) => slot.required && !slot.imageRef) ?? null,
     [inputSlotStates]
   );
+  const isTestProject = isTestProjectName(currentProjectName);
 
   useEffect(() => {
     updateNodeInternals(id);
@@ -169,8 +175,50 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     [currentModel, data.aspectRatio, data.duration, data.extraParams, data.outputCount, t]
   );
 
+  const createMockResultBatch = useCallback((modelIds: string[]) => {
+    const batchId = globalThis.crypto?.randomUUID?.() ?? `mock-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const prompt = data.prompt.trim() || 'Mock video prompt';
+    const variants = createMockVideoVariants({
+      modelIds,
+      prompt,
+      negativePrompt: data.negativePrompt?.trim() || undefined,
+      duration: data.duration,
+      aspectRatio: data.aspectRatio,
+      extraParams: data.extraParams,
+      firstFrameRef: firstFrameSlot?.imageRef ?? '',
+      tailFrameRef: tailFrameSlot?.imageRef ?? undefined,
+    });
+    const firstVariant = variants[0];
+    if (!firstVariant) {
+      return;
+    }
+
+    deriveOrUpdateResultBatch({
+      sourceGenNodeId: id,
+      batchId,
+      kind: 'video',
+      snapshotParams: firstVariant.snapshotParams,
+      successfulVariants: variants,
+    });
+  }, [
+    data.aspectRatio,
+    data.duration,
+    data.extraParams,
+    data.negativePrompt,
+    data.prompt,
+    deriveOrUpdateResultBatch,
+    firstFrameSlot?.imageRef,
+    id,
+    tailFrameSlot?.imageRef,
+  ]);
+
   const submitTask = useCallback(async () => {
     setLocalError(null);
+    if (isTestProject) {
+      const outputCount = Math.max(1, Math.round(data.outputCount || 1));
+      createMockResultBatch(Array.from({ length: outputCount }, () => data.modelId));
+      return;
+    }
     if (missingRequiredSlot) {
       setLocalError(
         missingRequiredSlot.handleId === 'image-first-frame'
@@ -259,6 +307,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     data.negativePrompt,
     data.prompt,
     currentModel.providerConfig,
+    createMockResultBatch,
     effectiveExtraParams,
     firstFrameSlot?.imageRef,
     id,
@@ -266,6 +315,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     kling.enabled,
     kling.secretKey,
     isConcurrencyLimited,
+    isTestProject,
     maxConcurrent,
     missingRequiredSlot,
     t,
@@ -325,6 +375,15 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
       return;
     }
     setLocalError(null);
+    if (isTestProject) {
+      setIsRunningArena(true);
+      try {
+        createMockResultBatch(videoModels.map((model) => model.id));
+      } finally {
+        setIsRunningArena(false);
+      }
+      return;
+    }
     if (missingRequiredSlot) {
       setLocalError(
         missingRequiredSlot.handleId === 'image-first-frame'
@@ -434,9 +493,11 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     }
   }, [
     buildModelSnapshotParams,
+    createMockResultBatch,
     data.prompt,
     id,
     isActionBusy,
+    isTestProject,
     kling.accessKey,
     kling.enabled,
     kling.secretKey,
@@ -542,13 +603,15 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
     });
   }, [data.currentBatch, data.currentTask, id, updateNodeData]);
 
-  const generateButtonTitle = missingRequiredSlot
-    ? missingRequiredSlot.handleId === 'image-first-frame'
+  const generateButtonTitle = isTestProject
+    ? undefined
+    : missingRequiredSlot
+      ? missingRequiredSlot.handleId === 'image-first-frame'
       ? t('node.videoGen.firstFrameRequiredTip')
       : `${missingRequiredSlot.label} required`
-    : isConcurrencyLimited
-      ? t('node.videoGen.concurrencyLimitTip', { count: maxConcurrent })
-      : undefined;
+      : isConcurrencyLimited
+        ? t('node.videoGen.concurrencyLimitTip', { count: maxConcurrent })
+        : undefined;
 
   const renderInputSlot = (
     handleId: string,
@@ -681,7 +744,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
             {localError || data.currentTask?.errorMessage}
           </div>
         ) : null}
-        {!isBusy && isConcurrencyLimited ? (
+        {!isTestProject && !isBusy && isConcurrencyLimited ? (
           <div className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-100">
             {`当前已有 ${activeTaskCount} 个视频任务在执行，达到并发上限 ${maxConcurrent}`}
           </div>
@@ -741,7 +804,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
                 </button>
                 <button
                   type="button"
-                  disabled={isActionBusy || Boolean(missingRequiredSlot)}
+                  disabled={isActionBusy || (!isTestProject && Boolean(missingRequiredSlot))}
                   className="flex w-full items-center justify-center gap-2 rounded-lg border border-[rgba(255,255,255,0.14)] bg-bg-dark/65 px-3 py-2 text-xs font-medium text-text-dark transition-colors hover:bg-[rgba(255,255,255,0.06)] disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -780,7 +843,7 @@ export const VideoGenNode = memo(({ id, data, selected, width, height }: VideoGe
               });
             }}
             onSubmit={() => void submitTask()}
-            submitDisabled={isActionBusy || isConcurrencyLimited || Boolean(missingRequiredSlot)}
+            submitDisabled={isActionBusy || (!isTestProject && (isConcurrencyLimited || Boolean(missingRequiredSlot)))}
             submitVariant="circle"
             submitTitle={generateButtonTitle}
             triggerSize="sm"

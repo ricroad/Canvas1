@@ -325,6 +325,7 @@
   "project": {
     "title": "项目管理",
     "newProject": "新建项目",
+    "openTestProject": "打开 test",
     "newProjectTitle": "新建项目",
     "open": "打开项目",
     "save": "保存项目",

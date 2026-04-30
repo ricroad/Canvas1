@@ -298,6 +298,7 @@
   "project": {
     "title": "Projects",
     "newProject": "New Project",
+    "openTestProject": "Open test",
     "newProjectTitle": "New Project",
     "open": "Open Project",
     "save": "Save Project",
