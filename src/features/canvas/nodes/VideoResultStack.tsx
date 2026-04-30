@@ -35,15 +35,29 @@ interface VariantCardProps {
   };
 }
 
+const VARIANT_CARD_BASE_CLASS =
+  'group/card relative aspect-video overflow-hidden rounded-[10px] border bg-bg-dark/95 text-left shadow-[0_2px_14px_rgba(0,0,0,0.22)] outline-none transition-all duration-150 focus-visible:border-accent/60';
+const VARIANT_CARD_SELECTED_CLASS =
+  'border-accent/70 shadow-[0_0_0_1px_rgba(59,130,246,0.24),0_4px_18px_rgba(0,0,0,0.26)]';
+const VARIANT_CARD_IDLE_CLASS =
+  'border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]';
+const VARIANT_BADGE_CLASS =
+  'rounded-md border border-[rgba(255,255,255,0.08)] bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/90 backdrop-blur-sm';
+const VARIANT_ACTION_CLASS =
+  'inline-flex h-6 items-center rounded-md border border-[rgba(255,255,255,0.12)] bg-black/55 px-2 text-[10px] font-medium text-white/90 backdrop-blur-sm transition-colors hover:bg-black/70';
+const VARIANT_PRIMARY_ACTION_CLASS =
+  'inline-flex h-6 items-center rounded-md border border-accent/30 bg-accent/70 px-2 text-[10px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-accent/90';
+const STACK_LAYER_SHADOW = '0 2px 14px rgba(0,0,0,0.24)';
+
 function formatDuration(seconds: number): string {
   return `${seconds}s`;
 }
 
 function PendingThumbnail({ label }: { label: string }) {
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-[rgba(255,255,255,0.035)]">
-      <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,0.045)_42%,rgba(255,255,255,0.09)_50%,rgba(255,255,255,0.045)_58%,transparent_100%)] bg-[length:220%_100%] animate-[pulse_1.6s_ease-in-out_infinite]" />
-      <div className="relative flex items-center gap-2 rounded-full border border-[rgba(255,255,255,0.12)] bg-black/24 px-3 py-1.5 text-[11px] font-medium text-text-muted">
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-white/[0.025]">
+      <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,0.035)_42%,rgba(255,255,255,0.07)_50%,rgba(255,255,255,0.035)_58%,transparent_100%)] bg-[length:220%_100%] animate-[pulse_1.6s_ease-in-out_infinite]" />
+      <div className="relative flex items-center gap-2 rounded-full border border-[rgba(255,255,255,0.08)] bg-black/20 px-3 py-1.5 text-[11px] font-medium text-text-muted">
         <Loader2 className="h-3.5 w-3.5 animate-spin text-accent/80" />
         <span>{label}</span>
       </div>
@@ -68,10 +82,8 @@ function VariantCard({
       role="button"
       tabIndex={0}
       className={[
-        'group/card relative aspect-video overflow-hidden rounded-lg border bg-bg-dark text-left shadow-sm outline-none transition-all duration-150 focus-visible:border-accent/70',
-        isSelected
-          ? 'border-accent shadow-[0_0_0_1px_rgba(59,130,246,0.34)]'
-          : 'border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.24)]',
+        VARIANT_CARD_BASE_CLASS,
+        isSelected ? VARIANT_CARD_SELECTED_CLASS : VARIANT_CARD_IDLE_CLASS,
       ].join(' ')}
       onClick={(event) => {
         event.stopPropagation();
@@ -91,26 +103,26 @@ function VariantCard({
         <PendingThumbnail label={labels.missingThumbnail} />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/42 via-transparent to-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/24 via-transparent to-black/42" />
 
       {isSelected ? (
-        <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white shadow-lg">
+        <span className="absolute left-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent/90 text-white shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
           <Check className="h-3 w-3" />
         </span>
       ) : null}
 
-      <span className="absolute right-1 top-1 max-w-[calc(100%-2.25rem)] truncate rounded-md border border-white/10 bg-black/64 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm">
+      <span className={`absolute right-1 top-1 max-w-[calc(100%-2.25rem)] truncate ${VARIANT_BADGE_CLASS}`}>
         {modelName}
       </span>
 
-      <span className="absolute bottom-1 left-1 rounded-md border border-white/10 bg-black/64 px-1.5 py-0.5 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm">
+      <span className={`absolute bottom-1 left-1 ${VARIANT_BADGE_CLASS}`}>
         {formatDuration(variant.videoDurationSeconds)}
       </span>
 
       <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 transition-opacity duration-150 group-hover/card:opacity-100">
         <button
           type="button"
-          className="inline-flex h-6 items-center rounded-md border border-[rgba(255,255,255,0.16)] bg-black/72 px-2 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-black/86"
+          className={VARIANT_ACTION_CLASS}
           onClick={(event) => {
             event.stopPropagation();
             onPreview(index);
@@ -120,7 +132,7 @@ function VariantCard({
         </button>
         <button
           type="button"
-          className="inline-flex h-6 items-center rounded-md border border-accent/40 bg-accent/86 px-2 text-[10px] font-medium text-white shadow-sm backdrop-blur-sm transition-colors hover:bg-accent"
+          className={VARIANT_PRIMARY_ACTION_CLASS}
           onClick={(event) => {
             event.stopPropagation();
             onAdopt(index);
@@ -214,13 +226,14 @@ export function VideoResultStack({
             <div
               key={`${variant.variantId}-${layerIndex}`}
               className={[
-                'absolute inset-0 overflow-hidden rounded-[inherit] border bg-bg-dark shadow-lg transition-transform duration-150',
+                'absolute inset-0 overflow-hidden rounded-[inherit] border bg-bg-dark transition-transform duration-150',
                 isTopLayer ? 'z-30' : 'pointer-events-none',
               ].join(' ')}
               style={{
                 zIndex: 30 - layerIndex,
-                borderColor: layerIndex === 0 ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.1)',
-                opacity: 1 - layerIndex * 0.12,
+                borderColor: layerIndex === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.08)',
+                boxShadow: STACK_LAYER_SHADOW,
+                opacity: 1 - layerIndex * 0.08,
                 transform: `translate(${layerIndex * 4}px, ${layerIndex * 3}px) rotate(${layerIndex * 1.2}deg)`,
               }}
             >
@@ -237,7 +250,7 @@ export function VideoResultStack({
               {isTopLayer ? (
                 <button
                   type="button"
-                  className="absolute inset-0 flex items-center justify-center bg-black/14 opacity-0 transition-opacity duration-150 hover:opacity-100"
+                  className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity duration-150 hover:opacity-100"
                   onClick={(event) => {
                     event.stopPropagation();
                     onToggleExpand();
@@ -252,7 +265,7 @@ export function VideoResultStack({
           );
         })}
 
-      <span className="pointer-events-none absolute right-2 top-2 z-40 inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.16)] bg-black/64 px-2 text-[11px] font-semibold text-white shadow-lg">
+      <span className="pointer-events-none absolute right-2 top-2 z-40 inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-[rgba(255,255,255,0.12)] bg-black/55 px-2 text-[11px] font-semibold text-white/95 shadow-[0_2px_10px_rgba(0,0,0,0.22)] backdrop-blur-sm">
         {variants.length}
       </span>
     </div>
