@@ -93,6 +93,7 @@ interface SettingsState {
 }
 
 const HEX_COLOR_PATTERN = /^#?[0-9a-fA-F]{6}$/;
+const STORED_DEFAULT_ACCENT_COLORS = new Set(['#3b82f6', '3b82f6', '#e94e1b', 'e94e1b']);
 
 function normalizeHexColor(input: string): string {
   const trimmed = input.trim();
@@ -103,6 +104,10 @@ function normalizeHexColor(input: string): string {
     return DEFAULT_ACCENT_COLOR;
   }
   return trimmed.startsWith('#') ? trimmed.toUpperCase() : `#${trimmed.toUpperCase()}`;
+}
+
+function shouldResetPersistedAccentColor(input: unknown): boolean {
+  return typeof input === 'string' && STORED_DEFAULT_ACCENT_COLORS.has(input.trim().toLowerCase());
 }
 
 function normalizeApiKey(input: string): string {
@@ -347,7 +352,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-storage',
-      version: 10,
+      version: 11,
       onRehydrateStorage: () => {
         return (_state, error) => {
           if (error) {
@@ -383,14 +388,20 @@ export const useSettingsStore = create<SettingsState>()(
           usdToCnyRate?: number | string;
           preferDiscountedPrice?: boolean;
           grsaiCreditTierId?: GrsaiCreditTierId | string;
+          accentColor?: unknown;
         };
 
         const migratedApiKeys = normalizeApiKeys(state.apiKeys);
         const ignoreAtTagWhenCopyingAndGenerating =
           state.ignoreAtTagWhenCopyingAndGenerating ?? true;
+        const accentColorMigration: Partial<Pick<SettingsState, 'accentColor'>> =
+          shouldResetPersistedAccentColor(state.accentColor)
+            ? { accentColor: DEFAULT_ACCENT_COLOR }
+            : {};
         if (Object.keys(migratedApiKeys).length > 0) {
           return {
             ...(persistedState as object),
+            ...accentColorMigration,
             isHydrated: true,
             apiKeys: migratedApiKeys,
             kling: normalizeKlingSettings(state.kling),
@@ -432,6 +443,7 @@ export const useSettingsStore = create<SettingsState>()(
 
         return {
           ...(persistedState as object),
+          ...accentColorMigration,
           isHydrated: true,
           apiKeys: state.apiKey ? { ppio: normalizeApiKey(state.apiKey) } : {},
           kling: normalizeKlingSettings(state.kling),
