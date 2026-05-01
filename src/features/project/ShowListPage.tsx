@@ -277,35 +277,35 @@ export function ShowListPage() {
               <div
                 key={show.id}
                 onClick={() => navigate(`/shows/${show.id}`)}
-                className="group cursor-pointer rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
+                className="group relative cursor-pointer overflow-visible rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
               >
-                <div className="flex min-h-[120px] gap-4">
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <div className="h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:show-card-record-pulse_180ms_ease-out_1]" />
-                      <button
-                        type="button"
-                        onClick={(event) => void handleDeleteShow(show.id, event)}
-                        disabled={deletingShowId === show.id}
-                        className="shrink-0 rounded p-1 text-text-muted opacity-0 transition-[background-color,color,opacity] hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))] disabled:cursor-not-allowed disabled:opacity-40 group-hover:opacity-100"
-                        title={t('common.delete')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <h3 className="min-w-0 truncate text-base font-semibold leading-6 text-text-dark">
+                <div className="pointer-events-none absolute -bottom-5 -right-3 z-0 origin-bottom-right transition-transform duration-[180ms] ease-out [filter:drop-shadow(var(--show-cover-shadow))] [transform:rotate(7deg)_translate(0,0)_scale(1)] group-hover:[transform:rotate(10deg)_translate(-2px,-4px)_scale(1.04)]">
+                  <ShowCover coverKey={show.cover_url} />
+                </div>
+                <div className="relative z-10">
+                  <div className="mb-4 h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:show-card-record-pulse_180ms_ease-out_1]" />
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-6 text-text-dark">
                       {show.title}
                     </h3>
-                    <div className="mt-auto space-y-1 pt-3 font-mono text-xs leading-5 text-text-muted">
-                      <p>
-                        {t('project.modified')}: {formatDate(show.updated_at)}
-                      </p>
-                      <p>
-                        {t('project.created')}: {formatDate(show.created_at)}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(event) => void handleDeleteShow(show.id, event)}
+                      disabled={deletingShowId === show.id}
+                      className="shrink-0 rounded p-1 text-text-muted opacity-0 transition-[background-color,color,opacity] hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))] disabled:cursor-not-allowed disabled:opacity-40 group-hover:opacity-100"
+                      title={t('common.delete')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
-                  <ShowCover coverKey={show.cover_url} />
+                  <div className="max-w-[calc(100%_-_80px)] space-y-1 font-mono text-xs leading-5 text-text-muted">
+                    <p>
+                      {t('project.modified')}: {formatDate(show.updated_at)}
+                    </p>
+                    <p>
+                      {t('project.created')}: {formatDate(show.created_at)}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
