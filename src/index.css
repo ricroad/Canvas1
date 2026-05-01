@@ -81,7 +81,7 @@
   --shadow-card-hover:
     0 4px 12px rgb(var(--brand-ink-rgb) / 0.06),
     0 16px 36px rgb(var(--brand-ink-rgb) / 0.10);
-  --show-cover-shadow: 0 14px 18px rgb(var(--brand-ink-rgb) / 0.18);
+  --show-cover-shadow: 4px 8px 14px rgba(11,11,13,0.18);
 
   /* ── Copilot / sidebar semantic tokens (light) ── */
   --copilot-bg: rgba(246, 247, 249, 0.92);
@@ -161,7 +161,7 @@
   --shadow-card-hover:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 16px 36px rgba(0, 0, 0, 0.6);
-  --show-cover-shadow: 0 16px 22px rgba(0, 0, 0, 0.62);
+  --show-cover-shadow: 4px 8px 14px rgba(0,0,0,0.50);
 
   /* ── Copilot / sidebar semantic tokens (dark) ── */
   --copilot-bg: rgba(22, 22, 24, 0.92);

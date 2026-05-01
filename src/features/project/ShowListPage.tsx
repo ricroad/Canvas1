@@ -279,7 +279,7 @@ export function ShowListPage() {
                 onClick={() => navigate(`/shows/${show.id}`)}
                 className="group relative cursor-pointer overflow-visible rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
               >
-                <div className="pointer-events-none absolute -bottom-5 -right-3 z-0 origin-bottom-right transition-transform duration-[180ms] ease-out [filter:drop-shadow(var(--show-cover-shadow))] [transform:rotate(7deg)_translate(0,0)_scale(1)] group-hover:[transform:rotate(10deg)_translate(-2px,-4px)_scale(1.04)]">
+                <div className="pointer-events-none absolute bottom-3 right-3 z-0 origin-bottom-right transition-transform duration-[180ms] ease-out [filter:drop-shadow(var(--show-cover-shadow))] [transform:translate(0,_0)_rotate(-7deg)_scale(1)] group-hover:[transform:translate(0,_-3px)_rotate(-10deg)_scale(1.03)]">
                   <ShowCover coverKey={show.cover_url} />
                 </div>
                 <div className="relative z-10">
