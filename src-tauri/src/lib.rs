@@ -8,6 +8,8 @@ mod assets;
 mod episodes;
 #[path = "commands/shows.rs"]
 mod shows;
+#[path = "commands/storage.rs"]
+mod storage;
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -216,6 +218,9 @@ pub fn run() {
             assets::create_asset,
             assets::update_asset,
             assets::delete_asset,
+            storage::storage_put_object,
+            storage::storage_resolve_url,
+            storage::storage_delete_object,
             system::get_runtime_system_info,
             update::check_latest_release_tag,
         ])
