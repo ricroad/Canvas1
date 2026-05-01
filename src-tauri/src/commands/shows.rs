@@ -15,6 +15,8 @@ pub struct Show {
     pub cover_url: Option<String>,
     pub created_at: i64,
     pub updated_at: i64,
+    pub episode_count: i64,
+    pub done_episode_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -78,6 +80,8 @@ fn row_to_show(row: &Row<'_>) -> rusqlite::Result<Show> {
         cover_url: row.get(3)?,
         created_at: row.get(4)?,
         updated_at: row.get(5)?,
+        episode_count: row.get(6)?,
+        done_episode_count: row.get(7)?,
     })
 }
 
@@ -85,9 +89,22 @@ fn load_show(conn: &Connection, id: &str) -> Result<Show, String> {
     let mut stmt = conn
         .prepare(
             r#"
-            SELECT id, title, description, cover_url, created_at, updated_at
-            FROM shows
-            WHERE id = ?1
+            SELECT
+              s.id,
+              s.title,
+              s.description,
+              s.cover_url,
+              s.created_at,
+              s.updated_at,
+              (SELECT COUNT(*) FROM projects p WHERE p.show_id = s.id) AS episode_count,
+              (
+                SELECT COUNT(*)
+                FROM projects p
+                WHERE p.show_id = s.id
+                  AND p.is_done = 1
+              ) AS done_episode_count
+            FROM shows s
+            WHERE s.id = ?1
             LIMIT 1
             "#,
         )
@@ -115,8 +132,21 @@ pub fn list_shows(
     let mut stmt = conn
         .prepare(
             r#"
-            SELECT id, title, description, cover_url, created_at, updated_at
-            FROM shows
+            SELECT
+              s.id,
+              s.title,
+              s.description,
+              s.cover_url,
+              s.created_at,
+              s.updated_at,
+              (SELECT COUNT(*) FROM projects p WHERE p.show_id = s.id) AS episode_count,
+              (
+                SELECT COUNT(*)
+                FROM projects p
+                WHERE p.show_id = s.id
+                  AND p.is_done = 1
+              ) AS done_episode_count
+            FROM shows s
             ORDER BY updated_at DESC
             LIMIT ?1 OFFSET ?2
             "#,

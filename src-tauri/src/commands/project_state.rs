@@ -168,6 +168,23 @@ fn ensure_projects_table(conn: &Connection) -> Result<(), String> {
             .map_err(|e| format!("Failed to add episode_number column: {}", e))?;
     }
 
+    let has_is_done = column_exists(conn, "projects", "is_done")
+        .map_err(|e| format!("Failed to inspect projects is_done column: {}", e))?;
+    if !has_is_done {
+        conn.execute(
+            "ALTER TABLE projects ADD COLUMN is_done INTEGER NOT NULL DEFAULT 0",
+            [],
+        )
+        .map_err(|e| format!("Failed to add is_done column: {}", e))?;
+    }
+
+    let has_completed_at = column_exists(conn, "projects", "completed_at")
+        .map_err(|e| format!("Failed to inspect projects completed_at column: {}", e))?;
+    if !has_completed_at {
+        conn.execute("ALTER TABLE projects ADD COLUMN completed_at INTEGER", [])
+            .map_err(|e| format!("Failed to add completed_at column: {}", e))?;
+    }
+
     conn.execute_batch(
         r#"
         CREATE INDEX IF NOT EXISTS idx_projects_show_id ON projects(show_id);

@@ -15,6 +15,8 @@ pub struct Episode {
     pub title: String,
     pub episode_number: Option<i64>,
     pub node_count: i64,
+    pub is_done: bool,
+    pub completed_at: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }
@@ -80,8 +82,10 @@ fn row_to_episode(row: &Row<'_>) -> rusqlite::Result<Episode> {
         title: row.get(3)?,
         episode_number: row.get(4)?,
         node_count: row.get(5)?,
-        created_at: row.get(6)?,
-        updated_at: row.get(7)?,
+        is_done: row.get::<_, i64>(6)? != 0,
+        completed_at: row.get(7)?,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
     })
 }
 
@@ -96,6 +100,8 @@ fn load_episode(conn: &Connection, id: &str) -> Result<Episode, String> {
               name,
               episode_number,
               node_count,
+              is_done,
+              completed_at,
               created_at,
               updated_at
             FROM projects
@@ -139,6 +145,8 @@ pub fn list_episodes(
               name,
               episode_number,
               node_count,
+              is_done,
+              completed_at,
               created_at,
               updated_at
             FROM projects
@@ -190,9 +198,11 @@ pub fn create_episode(
           viewport_json,
           history_json,
           show_id,
-          episode_number
+          episode_number,
+          is_done,
+          completed_at
         )
-        VALUES (?1, ?2, ?3, ?4, 0, '[]', '[]', '{"x":0,"y":0,"zoom":1}', '{"past":[],"future":[]}', ?5, ?6)
+        VALUES (?1, ?2, ?3, ?4, 0, '[]', '[]', '{"x":0,"y":0,"zoom":1}', '{"past":[],"future":[]}', ?5, ?6, 0, NULL)
         "#,
         params![id, title, now, now, show_id, episode_number],
     )
@@ -215,20 +225,53 @@ pub fn update_episode_meta(
     id: String,
     title: String,
     episode_number: Option<i64>,
+    is_done: Option<bool>,
 ) -> Result<Episode, String> {
     let conn = open_db(&app)?;
     let updated_at = now_ms();
 
-    conn.execute(
-        r#"
-        UPDATE projects
-        SET name = ?1,
-            episode_number = ?2,
-            updated_at = ?3
-        WHERE id = ?4
-        "#,
-        params![title, episode_number, updated_at, id],
-    )
+    match is_done {
+        Some(true) => {
+            conn.execute(
+                r#"
+                UPDATE projects
+                SET name = ?1,
+                    episode_number = ?2,
+                    is_done = 1,
+                    completed_at = ?3,
+                    updated_at = ?4
+                WHERE id = ?5
+                "#,
+                params![title, episode_number, updated_at, updated_at, id],
+            )
+        }
+        Some(false) => {
+            conn.execute(
+                r#"
+                UPDATE projects
+                SET name = ?1,
+                    episode_number = ?2,
+                    is_done = 0,
+                    completed_at = NULL,
+                    updated_at = ?3
+                WHERE id = ?4
+                "#,
+                params![title, episode_number, updated_at, id],
+            )
+        }
+        None => {
+            conn.execute(
+                r#"
+                UPDATE projects
+                SET name = ?1,
+                    episode_number = ?2,
+                    updated_at = ?3
+                WHERE id = ?4
+                "#,
+                params![title, episode_number, updated_at, id],
+            )
+        }
+    }
     .map_err(|e| format!("Failed to update episode metadata: {}", e))?;
 
     load_episode(&conn, &id)
