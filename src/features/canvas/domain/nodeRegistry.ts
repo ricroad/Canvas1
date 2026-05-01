@@ -163,6 +163,7 @@ const exportImageNodeDefinition: CanvasNodeDefinition<ExportImageNodeData> = {
   createDefaultData: () => ({
     displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.exportImage],
     imageUrl: null,
+    storageKey: null,
     previewImageUrl: null,
     aspectRatio: DEFAULT_ASPECT_RATIO,
     isSizeManuallyAdjusted: false,

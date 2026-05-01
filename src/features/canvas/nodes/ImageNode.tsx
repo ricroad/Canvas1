@@ -30,6 +30,7 @@ import { MagneticHandle } from '@/features/canvas/ui/MagneticHandle';
 import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canvas/ui/NodeHeader';
 import { NodeResizeHandle } from '@/features/canvas/ui/NodeResizeHandle';
 import { CanvasNodeImage } from '@/features/canvas/ui/CanvasNodeImage';
+import { storage } from '@/storage';
 import { useCanvasStore } from '@/stores/canvasStore';
 
 type ImageNodeProps = NodeProps & {
@@ -52,7 +53,12 @@ export const ImageNode = memo(({ id, data, selected, type, width, height }: Imag
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
   const { zoom } = useViewport();
   const [now, setNow] = useState(() => Date.now());
+  const [storageImageUrl, setStorageImageUrl] = useState<string | null>(null);
   const isExportResultNode = type === CANVAS_NODE_TYPES.exportImage;
+  const storageKey =
+    isExportResultNode && typeof data.storageKey === 'string' && data.storageKey.trim().length > 0
+      ? data.storageKey
+      : null;
   const isGenerating = typeof data.isGenerating === 'boolean' ? data.isGenerating : false;
   const generationError =
     typeof (data as { generationError?: unknown }).generationError === 'string'
@@ -85,6 +91,27 @@ export const ImageNode = memo(({ id, data, selected, type, width, height }: Imag
   useEffect(() => {
     updateNodeInternals(id);
   }, [id, resolvedHeight, resolvedWidth, updateNodeInternals]);
+
+  useEffect(() => {
+    if (!storageKey || data.imageUrl) {
+      setStorageImageUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    storage
+      .getObjectUrl(storageKey)
+      .then((url) => {
+        if (!cancelled) {
+          setStorageImageUrl(url);
+        }
+      })
+      .catch((err) => console.warn('[ImageNode] resolve storage_key failed', err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data.imageUrl, storageKey]);
 
   useEffect(() => {
     if (!isGenerating) {
@@ -133,19 +160,21 @@ export const ImageNode = memo(({ id, data, selected, type, width, height }: Imag
     return t('node.imageNode.waitingResultDelayed', { minutes: waitedMinutes });
   }, [isExportResultNode, isGenerating, t, waitedMinutes]);
 
+  const resolvedImageUrl = data.imageUrl || storageImageUrl;
+
   const imageSource = useMemo(() => {
     const preferOriginal = shouldUseOriginalImageByZoom(zoom);
     const picked = preferOriginal
-      ? data.imageUrl || data.previewImageUrl
-      : data.previewImageUrl || data.imageUrl;
+      ? resolvedImageUrl || data.previewImageUrl
+      : data.previewImageUrl || resolvedImageUrl;
     return picked ? resolveImageDisplayUrl(picked) : null;
-  }, [data.imageUrl, data.previewImageUrl, zoom]);
+  }, [data.previewImageUrl, resolvedImageUrl, zoom]);
 
   // 获取原图 URL 用于查看器
   const originalImageUrl = useMemo(() => {
-    if (!data.imageUrl) return null;
-    return resolveImageDisplayUrl(data.imageUrl);
-  }, [data.imageUrl]);
+    if (!resolvedImageUrl) return null;
+    return resolveImageDisplayUrl(resolvedImageUrl);
+  }, [resolvedImageUrl]);
 
   // TODO Phase 3.4: add <NodeCabinBar> here
   return (
@@ -177,7 +206,7 @@ export const ImageNode = memo(({ id, data, selected, type, width, height }: Imag
       <div
         className={`relative h-full w-full overflow-hidden rounded-[var(--node-radius)] ${hasGenerationError ? 'bg-[rgba(127,29,29,0.2)]' : 'bg-bg-dark'}`}
       >
-        {data.imageUrl ? (
+        {resolvedImageUrl ? (
           <CanvasNodeImage
             src={imageSource ?? ''}
             alt={isExportResultNode ? t('node.imageNode.resultAlt') : t('node.imageNode.generatedAlt')}

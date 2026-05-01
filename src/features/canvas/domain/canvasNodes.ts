@@ -69,6 +69,8 @@ export type ExportImageNodeResultKind =
   | 'storyboardFrameEdit';
 
 export interface ExportImageNodeData extends NodeImageData {
+  /** storage_key from scene asset library; null means use imageUrl directly. */
+  storageKey?: string | null;
   resultKind?: ExportImageNodeResultKind;
 }
 
