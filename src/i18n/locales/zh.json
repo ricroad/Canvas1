@@ -332,6 +332,29 @@
     "newShowTitle": "请输入剧名",
     "confirmDeleteShow": "确认删除这部剧？"
   },
+  "showDetail": {
+    "notFound": "剧不存在或已删除",
+    "backToShows": "返回剧列表",
+    "renameShow": "重命名",
+    "renameShowTitle": "请输入新的剧名",
+    "deleteShow": "删除剧",
+    "confirmDeleteShow": "确认删除这部剧吗？删除后所有单集和资产都会丢失。",
+    "assetLibrary": "剧资产库",
+    "assetCategory": {
+      "character": "人物",
+      "scene": "场景",
+      "prop": "道具",
+      "other": "其他"
+    },
+    "uploadAsset": "上传",
+    "uploadComingSoon": "上传功能即将上线",
+    "episodes": "单集",
+    "newEpisode": "新建单集",
+    "newEpisodeTitle": "请输入单集标题",
+    "episodeNumber": "第 {{n}} 集",
+    "confirmDeleteEpisode": "确认删除这一集吗？画布数据将一并丢失。",
+    "loadFailed": "加载失败"
+  },
   "project": {
     "title": "项目管理",
     "newProject": "新建项目",

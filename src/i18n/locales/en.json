@@ -305,6 +305,29 @@
     "newShowTitle": "Enter show title",
     "confirmDeleteShow": "Confirm delete this show?"
   },
+  "showDetail": {
+    "notFound": "Show not found or deleted",
+    "backToShows": "Back to Shows",
+    "renameShow": "Rename",
+    "renameShowTitle": "Enter new show title",
+    "deleteShow": "Delete Show",
+    "confirmDeleteShow": "Delete this show? All episodes and assets will be lost.",
+    "assetLibrary": "Asset Library",
+    "assetCategory": {
+      "character": "Character",
+      "scene": "Scene",
+      "prop": "Prop",
+      "other": "Other"
+    },
+    "uploadAsset": "Upload",
+    "uploadComingSoon": "Upload coming soon",
+    "episodes": "Episodes",
+    "newEpisode": "New Episode",
+    "newEpisodeTitle": "Enter episode title",
+    "episodeNumber": "Episode {{n}}",
+    "confirmDeleteEpisode": "Delete this episode? Canvas data will be lost.",
+    "loadFailed": "Load failed"
+  },
   "project": {
     "title": "Projects",
     "newProject": "New Project",
