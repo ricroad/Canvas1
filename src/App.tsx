@@ -1,14 +1,8 @@
-import { useEffect, useState } from 'react';
-import { ReactFlowProvider } from '@xyflow/react';
+import { useEffect } from 'react';
+import { RouterProvider } from 'react-router-dom';
 import { invoke } from '@tauri-apps/api/core';
 import { isTauriEnv } from './commands/platform';
-import { Canvas } from './features/canvas/Canvas';
-import { TitleBar } from './components/TitleBar';
-import { LeftStrip } from './components/LeftStrip';
-import { CopilotPanel } from './features/copilot/CopilotPanel';
-import { SettingsDialog } from './components/SettingsDialog';
-import { GlobalErrorDialog } from './components/GlobalErrorDialog';
-import { ProjectManager } from './features/project/ProjectManager';
+import { router } from './router';
 import { useThemeStore } from './stores/themeStore';
 import { useProjectStore } from './stores/projectStore';
 import { useCanvasStore } from './stores/canvasStore';
@@ -20,14 +14,6 @@ import {
   type CanvasEdge,
   type CanvasNode,
 } from './features/canvas/domain/canvasNodes';
-import {
-  subscribeOpenGlobalErrorDialog,
-  type GlobalErrorDialogDetail,
-} from './features/app/errorDialogEvents';
-import {
-  subscribeOpenSettingsDialog,
-  type SettingsCategory,
-} from './features/settings/settingsEvents';
 
 function toRgbCssValue(hexColor: string): string | null {
   const hex = hexColor.replace('#', '');
@@ -45,14 +31,9 @@ function App() {
   const uiRadiusPreset = useSettingsStore((state) => state.uiRadiusPreset);
   const themeTonePreset = useSettingsStore((state) => state.themeTonePreset);
   const accentColor = useSettingsStore((state) => state.accentColor);
-  const [showSettings, setShowSettings] = useState(false);
-  const [settingsInitialCategory, setSettingsInitialCategory] = useState<SettingsCategory>('general');
-  const [globalError, setGlobalError] = useState<GlobalErrorDialogDetail | null>(null);
 
   const isHydrated = useProjectStore((state) => state.isHydrated);
   const hydrate = useProjectStore((state) => state.hydrate);
-  const currentProjectId = useProjectStore((state) => state.currentProjectId);
-  const closeProject = useProjectStore((state) => state.closeProject);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -102,21 +83,6 @@ function App() {
   useEffect(() => {
     void hydrate();
   }, [hydrate]);
-
-  useEffect(() => {
-    const unsubscribe = subscribeOpenGlobalErrorDialog((detail) => {
-      setGlobalError(detail);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = subscribeOpenSettingsDialog(({ category }) => {
-      setSettingsInitialCategory(category ?? 'general');
-      setShowSettings(true);
-    });
-    return unsubscribe;
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -327,47 +293,11 @@ function App() {
 
   if (!isHydrated) {
     return (
-      <ReactFlowProvider>
-        <div className="w-full h-full bg-bg-dark" />
-      </ReactFlowProvider>
+      <div className="h-full w-full bg-bg-dark" />
     );
   }
 
-  return (
-    <ReactFlowProvider>
-      <div className="w-full h-full flex flex-col bg-bg-dark">
-        <TitleBar
-          onSettingsClick={() => {
-            setSettingsInitialCategory('general');
-            setShowSettings(true);
-          }}
-          showBackButton={!!currentProjectId}
-          onBackClick={closeProject}
-        />
-
-        <main className="flex-1 relative overflow-hidden">
-          {currentProjectId ? <Canvas /> : <ProjectManager />}
-          {/* Floating overlays on top of canvas */}
-          {currentProjectId && <LeftStrip />}
-          {currentProjectId && <CopilotPanel />}
-        </main>
-
-        <SettingsDialog
-          isOpen={showSettings}
-          onClose={() => setShowSettings(false)}
-          initialCategory={settingsInitialCategory}
-        />
-        <GlobalErrorDialog
-          isOpen={Boolean(globalError)}
-          title={globalError?.title ?? ''}
-          message={globalError?.message ?? ''}
-          details={globalError?.details}
-          copyText={globalError?.copyText}
-          onClose={() => setGlobalError(null)}
-        />
-      </div>
-    </ReactFlowProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

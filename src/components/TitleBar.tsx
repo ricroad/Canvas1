@@ -3,10 +3,10 @@ import { getCurrentWindow, type Window as TauriWindow } from '@tauri-apps/api/wi
 import { Minus, X, Maximize2, Settings, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun, Languages } from 'lucide-react';
+import { useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { isTauriEnv } from '@/commands/platform';
 import { BrandLogo } from '@/components/BrandLogo';
 import { useThemeStore } from '@/stores/themeStore';
-import { useProjectStore } from '@/stores/projectStore';
 import closeNormalIcon from '@/assets/macos-traffic-lights/1-close-1-normal.svg';
 import closeHoverIcon from '@/assets/macos-traffic-lights/2-close-2-hover.svg';
 import minimizeNormalIcon from '@/assets/macos-traffic-lights/2-minimize-1-normal.svg';
@@ -16,14 +16,14 @@ import maximizeHoverIcon from '@/assets/macos-traffic-lights/3-maximize-2-hover.
 
 interface TitleBarProps {
   onSettingsClick: () => void;
-  showBackButton?: boolean;
-  onBackClick?: () => void;
 }
 
-export function TitleBar({ onSettingsClick, showBackButton, onBackClick }: TitleBarProps) {
+export function TitleBar({ onSettingsClick }: TitleBarProps) {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const matches = useMatches();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useThemeStore();
-  const currentProjectName = useProjectStore((state) => state.currentProject?.name);
 
   const appWindow = useMemo<TauriWindow | null>(() => {
     if (!isTauriEnv()) return null;
@@ -32,9 +32,23 @@ export function TitleBar({ onSettingsClick, showBackButton, onBackClick }: Title
   const isZh = i18n.language.startsWith('zh');
   const isMac =
     typeof navigator !== 'undefined'
-    && /(Mac|iPhone|iPad|iPod)/i.test(`${navigator.platform} ${navigator.userAgent}`);
-  const appTitle = t('app.title');
-  const titleText = currentProjectName ? `${currentProjectName} - ${appTitle}` : appTitle;
+      && /(Mac|iPhone|iPad|iPod)/i.test(`${navigator.platform} ${navigator.userAgent}`);
+  const appTitle = '无限画布';
+  const leafMatch = matches[matches.length - 1];
+  const normalizedPathname = location.pathname.replace(/\/+$/, '') || '/';
+  const titleText = (() => {
+    if (leafMatch?.id === 'show-list') {
+      return `剧列表 - ${appTitle}`;
+    }
+    if (leafMatch?.id === 'show-detail' && leafMatch.params.showId) {
+      return `剧 ${leafMatch.params.showId} - ${appTitle}`;
+    }
+    if (leafMatch?.id === 'episode-canvas' && leafMatch.params.episodeId) {
+      return `${leafMatch.params.episodeId} - ${appTitle}`;
+    }
+    return t('app.title');
+  })();
+  const showBackButton = normalizedPathname !== '/' && normalizedPathname !== '/shows';
 
   const handleMinimize = useCallback(async () => {
     await appWindow?.minimize();
@@ -71,6 +85,10 @@ export function TitleBar({ onSettingsClick, showBackButton, onBackClick }: Title
   const handleThemeClick = useCallback(() => {
     toggleTheme();
   }, [toggleTheme]);
+
+  const handleBackClick = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
 
   return (
     <div className="h-10 flex items-center justify-between bg-surface-dark border-b border-border-dark select-none z-50 relative">
@@ -116,14 +134,14 @@ export function TitleBar({ onSettingsClick, showBackButton, onBackClick }: Title
         className="flex-1 h-full flex items-center px-4 cursor-move"
         onMouseDown={handleDragStart}
       >
-        {showBackButton && onBackClick && (
+        {showBackButton && (
           <button
             type="button"
             data-no-drag="true"
             onMouseDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
-              onBackClick();
+              handleBackClick();
             }}
             className="mr-3 p-1 hover:bg-bg-dark rounded transition-colors"
             title={t('titleBar.back')}
@@ -135,7 +153,7 @@ export function TitleBar({ onSettingsClick, showBackButton, onBackClick }: Title
         <span className="text-sm font-semibold text-text-dark">
           {titleText}
         </span>
-        {!isZh && !currentProjectName ? (
+        {!isZh && titleText === t('app.title') ? (
           <span className="text-xs text-text-muted ml-2">{t('app.subtitle')}</span>
         ) : null}
       </div>

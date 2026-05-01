@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Plus, FolderOpen, Pencil, Trash2 } from 'lucide-react';
 import { useProjectStore } from '@/stores/projectStore';
 import { getConfiguredApiKeyCount, useSettingsStore } from '@/stores/settingsStore';
@@ -15,6 +16,7 @@ type SortDirection = 'asc' | 'desc';
 
 export function ProjectManager() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
@@ -25,8 +27,12 @@ export function ProjectManager() {
     getConfiguredApiKeyCount(state.apiKeys, providerIds)
   );
 
-  const { projects, isOpeningProject, createProject, deleteProject, renameProject, openProject } =
+  const { projects, isOpeningProject, createProject, deleteProject, renameProject } =
     useProjectStore();
+
+  const navigateToProjectCanvas = (id: string) => {
+    navigate(`/shows/${id}/episodes/${id}`);
+  };
 
   const handleCreateProject = () => {
     setEditingProjectId(null);
@@ -37,10 +43,11 @@ export function ProjectManager() {
   const handleOpenTestProject = () => {
     const existing = projects.find((project) => isTestProjectName(project.name));
     if (existing) {
-      openProject(existing.id);
+      navigateToProjectCanvas(existing.id);
       return;
     }
-    createProject(TEST_PROJECT_NAME);
+    const id = createProject(TEST_PROJECT_NAME);
+    navigateToProjectCanvas(id);
   };
 
   const handleRenameClick = (id: string, name: string, e: React.MouseEvent) => {
@@ -59,7 +66,8 @@ export function ProjectManager() {
     if (editingProjectId) {
       renameProject(editingProjectId, name);
     } else {
-      createProject(name);
+      const id = createProject(name);
+      navigateToProjectCanvas(id);
     }
   };
 
@@ -146,7 +154,7 @@ export function ProjectManager() {
             {sortedProjects.map((project) => (
               <div
                 key={project.id}
-                onClick={() => openProject(project.id)}
+                onClick={() => navigateToProjectCanvas(project.id)}
                 className="group cursor-pointer rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
               >
                 <div className="mb-4 h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:project-card-record-pulse_180ms_ease-out_1]" />
