@@ -2184,7 +2184,7 @@ export function Canvas() {
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color={dotColor} />
         <MiniMap
-          className="canvas-minimap nopan nowheel !border-border-dark !bg-surface-dark"
+          className="canvas-minimap nopan nowheel"
           style={{ pointerEvents: 'all', zIndex: 10000 }}
           nodeColor="rgba(120, 120, 120, 0.92)"
           maskColor="rgba(0, 0, 0, 0.62)"
