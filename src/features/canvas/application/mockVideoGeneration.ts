@@ -2,7 +2,7 @@ import type { VideoResultNodeData, VideoVariant } from '@/features/canvas/domain
 import { getVideoModel } from '@/features/canvas/models';
 
 const MOCK_THUMBNAIL_COLORS = [
-  ['#2563eb', '#0f172a'],
+  ['#E94E1B', '#0B0B0D'],
   ['#16a34a', '#052e16'],
   ['#e11d48', '#450a0a'],
   ['#d97706', '#431407'],

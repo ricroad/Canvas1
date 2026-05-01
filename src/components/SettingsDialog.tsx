@@ -918,7 +918,7 @@ export function SettingsDialog({
                   {/* ── 图像生成 分类 ─────────────────────────────────── */}
                   <div>
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="rounded px-2 py-0.5 text-[11px] font-semibold tracking-wide bg-blue-500/15 text-blue-400 border border-blue-500/25">
+                      <span className="rounded px-2 py-0.5 text-[11px] font-semibold tracking-wide bg-[rgb(var(--accent-rgb)/0.15)] text-[var(--accent)] border border-[rgb(var(--accent-rgb)/0.25)]">
                         {t('settings.imageCategoryLabel')}
                       </span>
                       <span className="text-xs text-text-muted">{t('settings.imageCategoryDesc')}</span>
