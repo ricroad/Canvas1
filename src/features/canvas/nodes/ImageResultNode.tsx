@@ -141,6 +141,7 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
     );
   };
 
+  // TODO Phase 3.4: add <NodeCabinBar> here
   return (
     <div
       className={[

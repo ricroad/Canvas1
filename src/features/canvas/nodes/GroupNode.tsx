@@ -20,10 +20,11 @@ export const GroupNode = memo(({ id, data, selected }: GroupNodeProps) => {
     [data]
   );
 
+  // TODO Phase 3.4: add <NodeCabinBar> here
   return (
     <div
       className={`group relative h-full w-full overflow-visible rounded-[18px] border ${selected
-        ? 'border-accent shadow-[0_0_0_1px_rgba(59,130,246,0.35)]'
+        ? 'border-accent shadow-[var(--shadow-spotlight)]'
         : 'border-[rgba(15,23,42,0.2)] dark:border-[rgba(255,255,255,0.26)]'
         }`}
       style={{

@@ -29,7 +29,7 @@ interface ImageVariantCardProps {
 const VARIANT_CARD_BASE_CLASS =
   'group/card relative h-full w-full overflow-hidden rounded-[10px] border bg-bg-dark/95 text-left shadow-[0_2px_14px_rgba(0,0,0,0.22)] outline-none transition-all duration-150 focus-visible:border-accent/60';
 const VARIANT_CARD_SELECTED_CLASS =
-  'border-accent/70 shadow-[0_0_0_1px_rgba(59,130,246,0.24),0_4px_18px_rgba(0,0,0,0.26)]';
+  'border-accent/70 shadow-[0_0_0_1px_rgb(var(--accent-rgb)_/_0.24),0_4px_18px_rgba(0,0,0,0.26)]';
 const VARIANT_CARD_IDLE_CLASS =
   'border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.16)]';
 const VARIANT_BADGE_CLASS =
@@ -456,7 +456,7 @@ export function ImageResultStack({
                     isDragPreview ? dragPreview.isDragPreviewExpanded : motionExpanded,
                     isDragPreview ? dragPreview.dragOffset : ZERO_OFFSET
                   ),
-                  borderColor: index === selectedIndex ? 'rgba(59,130,246,0.42)' : 'rgba(255,255,255,0.08)',
+                  borderColor: index === selectedIndex ? 'rgb(var(--accent-rgb) / 0.42)' : 'rgba(255,255,255,0.08)',
                   boxShadow: isDragPreview ? '0 10px 32px rgba(0,0,0,0.32)' : STACK_LAYER_SHADOW,
                 }}
               >

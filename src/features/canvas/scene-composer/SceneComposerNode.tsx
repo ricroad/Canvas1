@@ -106,7 +106,7 @@ export const SceneComposerNode = memo(({ id, data, selected }: SceneComposerNode
         className={`
           group relative flex flex-col overflow-visible rounded-[var(--node-radius)] border bg-surface-dark transition-colors duration-150
           ${selected
-            ? 'border-accent shadow-[0_0_0_1px_rgba(59,130,246,0.32)]'
+            ? 'border-accent shadow-[var(--shadow-spotlight)]'
             : 'border-[rgba(15,23,42,0.22)] hover:border-[rgba(15,23,42,0.34)] dark:border-[rgba(255,255,255,0.22)] dark:hover:border-[rgba(255,255,255,0.34)]'}
         `}
         style={{ width: NODE_WIDTH, height: NODE_HEIGHT }}

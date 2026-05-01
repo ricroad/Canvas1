@@ -797,13 +797,14 @@ export const ImageEditNode = memo(({ id, data, selected, width, height }: ImageE
     }
   };
 
+  // TODO Phase 3.4: add <NodeCabinBar> here
   return (
     <div
       ref={rootRef}
       className={`
         group relative flex h-full flex-col overflow-visible rounded-[var(--node-radius)] border bg-surface-dark/90 p-2 transition-colors duration-150
         ${selected
-          ? 'border-accent shadow-[0_0_0_1px_rgba(59,130,246,0.32)]'
+          ? 'border-accent shadow-[var(--shadow-spotlight)]'
           : 'border-[rgba(15,23,42,0.22)] hover:border-[rgba(15,23,42,0.34)] dark:border-[rgba(255,255,255,0.22)] dark:hover:border-[rgba(255,255,255,0.34)]'}
       `}
       style={{ width: `${resolvedWidth}px`, height: `${resolvedHeight}px` }}

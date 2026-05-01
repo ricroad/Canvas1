@@ -200,6 +200,7 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
     [data.variants, id, updateNodeData]
   );
 
+  // TODO Phase 3.4: add <NodeCabinBar> here
   return (
     <div
       className={[
@@ -338,13 +339,21 @@ export const VideoResultNode = memo(({ id, data, selected }: VideoResultNodeProp
               className={`relative z-10 w-[min(92vw,1080px)] overflow-hidden p-3 ${VIDEO_RESULT_PANEL_CLASS}`}
               onClick={(event) => event.stopPropagation()}
             >
-              <video
-                ref={playerVideoRef}
-                src={videoUrl}
-                controls
-                autoPlay
-                className="max-h-[84vh] w-full rounded-lg bg-black"
-              />
+              {videoUrl.startsWith('data:image/') ? (
+                <img
+                  src={videoUrl}
+                  alt={t('node.videoResult.thumbnailAlt')}
+                  className="max-h-[84vh] w-full rounded-lg bg-black object-contain"
+                />
+              ) : (
+                <video
+                  ref={playerVideoRef}
+                  src={videoUrl}
+                  controls
+                  autoPlay
+                  className="max-h-[84vh] w-full rounded-lg bg-black"
+                />
+              )}
             </div>
           </div>,
           document.body
