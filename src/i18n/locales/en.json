@@ -299,6 +299,13 @@
     "downloadSucceeded": "Downloaded {{count}} item(s)",
     "downloadPartial": "Downloaded {{succeeded}}, {{failed}} failed"
   },
+  "showAssetPanel": {
+    "title": "Show Asset Library",
+    "empty": "This show has no assets yet. Upload from show detail.",
+    "manageHint": "Manage in show detail",
+    "dragHint": "Drag onto canvas to use",
+    "loadFailed": "Failed to load"
+  },
   "showList": {
     "title": "Show Library",
     "newShow": "New Show",

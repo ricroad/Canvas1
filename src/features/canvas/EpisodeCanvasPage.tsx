@@ -6,6 +6,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { UiButton } from '@/components/ui/primitives';
 import { LeftStrip } from '@/components/LeftStrip';
 import { CopilotPanel } from '@/features/copilot/CopilotPanel';
+import { ShowAssetPanel } from '@/features/show-asset-panel/ShowAssetPanel';
 import { useProjectStore } from '@/stores/projectStore';
 import { Canvas } from './Canvas';
 
@@ -71,6 +72,7 @@ export function EpisodeCanvasPage() {
       <div className="relative h-full w-full">
         <Canvas key={episodeId} />
         <LeftStrip />
+        <ShowAssetPanel />
         <CopilotPanel />
       </div>
     </ReactFlowProvider>

@@ -1,11 +1,12 @@
 import { memo, useState, useCallback } from 'react';
-import { LayoutTemplate, Bot, Undo2, Redo2, Hand, Library, MousePointer2, WandSparkles } from 'lucide-react';
+import { LayoutTemplate, Bot, Undo2, Redo2, Hand, Library, MousePointer2, Package, WandSparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCopilotStore } from '@/stores/copilotStore';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { canvasEventBus } from '@/features/canvas/application/canvasServices';
 import { openSettingsDialog } from '@/features/settings/settingsEvents';
 import { useAssetLibraryStore } from '@/features/asset-library/assetLibraryStore';
+import { useShowAssetPanelStore } from '@/features/show-asset-panel/showAssetPanelStore';
 
 /* ----------------------------------------------------------------
  *  Icon button inside the pill
@@ -79,6 +80,8 @@ export const LeftStrip = memo(() => {
   const toggleCopilot = useCopilotStore((s) => s.togglePanel);
   const assetLibraryOpen = useAssetLibraryStore((s) => s.isOpen);
   const toggleAssetLibrary = useAssetLibraryStore((s) => s.toggle);
+  const showAssetPanelOpen = useShowAssetPanelStore((s) => s.isOpen);
+  const toggleShowAssetPanel = useShowAssetPanelStore((s) => s.toggle);
   const canvasToolMode = useCanvasStore((s) => s.canvasToolMode);
   const setCanvasToolMode = useCanvasStore((s) => s.setCanvasToolMode);
   const undo = useCanvasStore((s) => s.undo);
@@ -140,6 +143,12 @@ export const LeftStrip = memo(() => {
         tooltip={t('assetLibrary.title')}
         active={assetLibraryOpen}
         onClick={toggleAssetLibrary}
+      />
+      <ToolBtn
+        icon={<Package size={18} />}
+        tooltip={t('showAssetPanel.title')}
+        active={showAssetPanelOpen}
+        onClick={toggleShowAssetPanel}
       />
 
       <Divider />

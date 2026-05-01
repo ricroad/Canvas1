@@ -326,6 +326,13 @@
     "downloadSucceeded": "已下载 {{count}} 项",
     "downloadPartial": "已下载 {{succeeded}} 项，{{failed}} 项失败"
   },
+  "showAssetPanel": {
+    "title": "剧素材库",
+    "empty": "这部剧还没有素材，去剧详情页上传",
+    "manageHint": "在剧详情页管理素材",
+    "dragHint": "拖到画布上使用",
+    "loadFailed": "加载失败"
+  },
   "showList": {
     "title": "剧列表",
     "newShow": "新建剧",
