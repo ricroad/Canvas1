@@ -299,6 +299,12 @@
     "downloadSucceeded": "Downloaded {{count}} item(s)",
     "downloadPartial": "Downloaded {{succeeded}}, {{failed}} failed"
   },
+  "showList": {
+    "title": "Show Library",
+    "newShow": "New Show",
+    "newShowTitle": "Enter show title",
+    "confirmDeleteShow": "Confirm delete this show?"
+  },
   "project": {
     "title": "Projects",
     "newProject": "New Project",

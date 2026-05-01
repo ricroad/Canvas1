@@ -326,6 +326,12 @@
     "downloadSucceeded": "已下载 {{count}} 项",
     "downloadPartial": "已下载 {{succeeded}} 项，{{failed}} 项失败"
   },
+  "showList": {
+    "title": "剧列表",
+    "newShow": "新建剧",
+    "newShowTitle": "请输入剧名",
+    "confirmDeleteShow": "确认删除这部剧？"
+  },
   "project": {
     "title": "项目管理",
     "newProject": "新建项目",
