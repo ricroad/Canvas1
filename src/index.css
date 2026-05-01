@@ -95,6 +95,7 @@
   --copilot-input-bg: rgba(255, 255, 255, 0.95);
   --copilot-input-border: rgba(0, 0, 0, 0.1);
   --copilot-input-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  --copilot-input-focus-shadow: 0 0 8px rgb(var(--brand-reel-rgb) / 0.25);
   --copilot-chip-bg: rgba(0, 0, 0, 0.04);
   --copilot-chip-border: rgba(0, 0, 0, 0.06);
   --copilot-divider: rgba(0, 0, 0, 0.06);
@@ -172,6 +173,7 @@
   --copilot-input-bg: rgba(255, 255, 255, 0.06);
   --copilot-input-border: rgba(255, 255, 255, 0.1);
   --copilot-input-shadow: 0 1px 6px rgba(0,0,0,0.15);
+  --copilot-input-focus-shadow: 0 0 16px rgb(var(--brand-reel-glow-rgb) / 0.4);
   --copilot-chip-bg: rgba(255, 255, 255, 0.06);
   --copilot-chip-border: rgba(255, 255, 255, 0.08);
   --copilot-divider: rgba(255, 255, 255, 0.06);

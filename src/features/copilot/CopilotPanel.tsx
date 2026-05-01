@@ -59,11 +59,11 @@ const TextBubble = memo(({ msg }: { msg: CopilotMessage }) => {
       <Avatar role={msg.role} />
       <div
         className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-[12.5px] leading-[1.65] whitespace-pre-wrap break-words ${
-          isUser ? 'rounded-tr-md' : 'rounded-tl-md'
+          isUser
+            ? 'ml-auto rounded-tr-md bg-[rgb(var(--accent-rgb)_/_0.10)]'
+            : 'rounded-tl-md border border-[color:var(--copilot-bubble-bot-border)] border-l-2 border-l-[color:var(--accent)] bg-[var(--copilot-bubble-bot)]'
         }`}
         style={{
-          background: isUser ? 'var(--copilot-bubble-user)' : 'var(--copilot-bubble-bot)',
-          border: isUser ? 'none' : '1px solid var(--copilot-bubble-bot-border)',
           color: 'var(--copilot-text-primary)',
           boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         }}
@@ -84,10 +84,9 @@ const ScriptCardFull = memo(({ msg }: { msg: CopilotMessage }) => {
     <div className="flex gap-2.5">
       <Avatar role="assistant" />
       <div
-        className="max-w-[82%] overflow-hidden rounded-2xl"
+        className="max-w-[82%] overflow-hidden rounded-2xl border border-[color:var(--copilot-card-border)] border-l-2 border-l-[color:var(--accent)]"
         style={{
           background: 'var(--copilot-card-bg)',
-          border: '1px solid var(--copilot-card-border)',
           boxShadow: 'var(--copilot-card-shadow)',
         }}
       >
@@ -132,10 +131,9 @@ const PromptListCard = memo(({ msg }: { msg: CopilotMessage }) => {
     <div className="flex gap-2.5">
       <Avatar role="assistant" />
       <div
-        className="max-w-[85%] overflow-hidden rounded-2xl"
+        className="max-w-[85%] overflow-hidden rounded-2xl border border-[color:var(--copilot-card-border)] border-l-2 border-l-[color:var(--accent)]"
         style={{
           background: 'var(--copilot-card-bg)',
-          border: '1px solid var(--copilot-card-border)',
           boxShadow: 'var(--copilot-card-shadow)',
         }}
       >
@@ -200,8 +198,7 @@ const LoadingBubble = memo(() => (
   <div className="flex gap-2.5">
     <Avatar role="assistant" />
     <div
-      className="rounded-2xl rounded-tl-md px-4 py-3"
-      style={{ background: 'var(--copilot-bubble-bot)', border: '1px solid var(--copilot-bubble-bot-border)' }}
+      className="rounded-2xl rounded-tl-md border border-[color:var(--copilot-bubble-bot-border)] border-l-2 border-l-[color:var(--accent)] bg-[var(--copilot-bubble-bot)] px-4 py-3"
     >
       <div className="flex items-center gap-1.5">
         <span className="h-[5px] w-[5px] animate-bounce rounded-full bg-accent/50 [animation-delay:0ms]" />
@@ -461,8 +458,8 @@ export const CopilotPanel = memo(() => {
         )}
         <div className="ml-auto flex items-center gap-1.5">
           <select
-            className="rounded-lg px-2 py-1 text-[10px] outline-none transition-all"
-            style={{ background: 'var(--copilot-input-bg)', border: '1px solid var(--copilot-input-border)', color: 'var(--copilot-text-secondary)' }}
+            className="rounded-lg border border-[color:var(--brand-ink-700)] px-2 py-1 font-mono text-[10px] outline-none transition-all dark:border-[rgba(11,11,13,0.12)]"
+            style={{ background: 'var(--copilot-input-bg)', color: 'var(--copilot-text-secondary)' }}
             value={llmModelId}
             onChange={(e) => setLlmModelId(e.target.value)}
           >
@@ -513,11 +510,9 @@ export const CopilotPanel = memo(() => {
       {/* Input area */}
       <div className="px-3 pb-3 pt-1">
         <div
-          className="flex items-end gap-1 rounded-2xl px-2 py-1.5 transition-all duration-200"
+          className="flex items-end gap-1 rounded-2xl border border-[color:var(--copilot-input-border)] px-2 py-1.5 shadow-[var(--copilot-input-shadow)] transition-all duration-200 focus-within:border-[color:var(--accent)] focus-within:shadow-[var(--copilot-input-focus-shadow)]"
           style={{
             background: 'var(--copilot-input-bg)',
-            border: '1px solid var(--copilot-input-border)',
-            boxShadow: 'var(--copilot-input-shadow)',
           }}
         >
           <button
