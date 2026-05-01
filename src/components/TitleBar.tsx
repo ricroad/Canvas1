@@ -160,7 +160,7 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
         <button
           type="button"
           onClick={handleLanguageClick}
-          className="h-full px-3 hover:bg-bg-dark transition-colors"
+          className="flex items-center justify-center h-full px-3 hover:bg-bg-dark transition-colors"
           title={i18n.language.startsWith('zh') ? t('titleBar.switchToEnglish') : t('titleBar.switchToChinese')}
         >
           <Languages className="w-4 h-4 text-text-muted" />
@@ -169,7 +169,7 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
         <button
           type="button"
           onClick={handleThemeClick}
-          className="h-full px-3 hover:bg-bg-dark transition-colors"
+          className="flex items-center justify-center h-full px-3 hover:bg-bg-dark transition-colors"
           title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
         >
           {theme === 'dark' ? (
@@ -182,7 +182,7 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
         <button
           type="button"
           onClick={onSettingsClick}
-          className="h-full px-3 hover:bg-bg-dark transition-colors"
+          className="flex items-center justify-center h-full px-3 hover:bg-bg-dark transition-colors"
           title={t('settings.title')}
         >
           <Settings className="w-4 h-4 text-text-muted" />
@@ -195,7 +195,7 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
             <button
               type="button"
               onClick={handleMinimize}
-              className="h-full px-3 hover:bg-bg-dark transition-colors"
+              className="flex items-center justify-center h-full px-3 hover:bg-bg-dark transition-colors"
               title={t('titleBar.minimize')}
             >
               <Minus className="w-4 h-4 text-text-muted hover:text-text-dark" />
@@ -204,7 +204,7 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
             <button
               type="button"
               onClick={handleMaximize}
-              className="h-full px-3 hover:bg-bg-dark transition-colors"
+              className="flex items-center justify-center h-full px-3 hover:bg-bg-dark transition-colors"
               title={t('titleBar.maximize')}
             >
               <Maximize2 className="w-4 h-4 text-text-muted hover:text-text-dark" />
@@ -213,7 +213,7 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
             <button
               type="button"
               onClick={handleClose}
-              className="h-full px-3 hover:bg-red-500 transition-colors group"
+              className="flex items-center justify-center h-full px-3 hover:bg-red-500 transition-colors group"
               title={t('titleBar.close')}
             >
               <X className="w-4 h-4 text-text-muted group-hover:text-white" />
