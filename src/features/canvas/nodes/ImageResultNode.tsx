@@ -87,13 +87,8 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
   };
   const [isStackExpanded, setIsStackExpanded] = useState(false);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
-  const expandedGridHeight = useMemo(() => {
-    const rows = Math.ceil(data.variants.length / 2);
-    return rows * 96 + (rows - 1) * 8 + 16;
-  }, [data.variants.length]);
   const hasMultipleVariants = data.variants.length > 1;
-  const dynamicContentHeight =
-    hasMultipleVariants && isStackExpanded ? Math.min(expandedGridHeight, 360) : IMAGE_RESULT_CONTENT_HEIGHT;
+  const dynamicContentHeight = IMAGE_RESULT_CONTENT_HEIGHT;
   const quickCreateRef = useRef<HTMLDivElement | null>(null);
   const quickCreateItems = useMemo(
     () => getConnectMenuNodeTypes('source').map((type) => nodeCatalog.getDefinition(type)),
@@ -158,7 +153,7 @@ export const ImageResultNode = memo(({ id, data, selected }: ImageResultNodeProp
       onClick={() => setSelectedNode(id)}
     >
       <div
-        className={`relative flex items-center justify-between ${VIDEO_RESULT_TOP_BAR_CLASS}`}
+        className={`relative z-[80] flex items-center justify-between ${VIDEO_RESULT_TOP_BAR_CLASS}`}
         style={{ height: `${VIDEO_RESULT_TOP_BAR_HEIGHT}px` }}
       >
         <div className="flex min-w-0 items-center gap-1.5 text-[11px]">

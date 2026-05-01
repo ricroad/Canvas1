@@ -27,7 +27,7 @@ interface ImageVariantCardProps {
 }
 
 const VARIANT_CARD_BASE_CLASS =
-  'group/card relative aspect-video overflow-hidden rounded-[10px] border bg-bg-dark/95 text-left shadow-[0_2px_14px_rgba(0,0,0,0.22)] outline-none transition-all duration-150 focus-visible:border-accent/60';
+  'group/card relative h-full w-full overflow-hidden rounded-[10px] border bg-bg-dark/95 text-left shadow-[0_2px_14px_rgba(0,0,0,0.22)] outline-none transition-all duration-150 focus-visible:border-accent/60';
 const VARIANT_CARD_SELECTED_CLASS =
   'border-accent/70 shadow-[0_0_0_1px_rgba(59,130,246,0.24),0_4px_18px_rgba(0,0,0,0.26)]';
 const VARIANT_CARD_IDLE_CLASS =
@@ -39,15 +39,38 @@ const VARIANT_ACTION_CLASS =
 const VARIANT_DELETE_ACTION_CLASS =
   'inline-flex h-6 w-6 items-center justify-center rounded-md border border-[rgba(255,255,255,0.1)] bg-black/50 text-red-100/90 backdrop-blur-sm transition-colors hover:border-red-300/20 hover:bg-red-500/20';
 const STACK_LAYER_SHADOW = '0 2px 14px rgba(0,0,0,0.24)';
-const STACK_CONTAINER_MOTION_CLASS = 'transition-[height,max-height] duration-200 ease-out';
 const STACK_VIEW_MOTION_CLASS = 'transition-[opacity,transform] duration-200 ease-out';
 const STACK_MOTION_MS = 280;
-const GRID_PADDING = 8;
-const GRID_GAP = 8;
-const GRID_CARD_WIDTH = 148;
-const GRID_CARD_HEIGHT = 83;
+const EXPANDED_GAP = 12;
 const DRAG_PREVIEW_THRESHOLD = 6;
 const ZERO_OFFSET = { x: 0, y: 0 };
+const COLLAPSED_LAYER_TRANSFORMS = [
+  { x: 0, y: 0, rotate: 0, scale: 1, opacity: 1 },
+  { x: -10, y: 10, rotate: -4.2, scale: 0.985, opacity: 0.82 },
+  { x: 13, y: 16, rotate: 3.4, scale: 0.97, opacity: 0.68 },
+  { x: 1, y: 24, rotate: -1.8, scale: 0.955, opacity: 0.54 },
+];
+
+function getExpandedSlot(depth: number): { x: number; y: number } {
+  const slots = [
+    { x: 0, y: 0 },
+    { x: 0, y: -1 },
+    { x: 1, y: -1 },
+    { x: 1, y: 0 },
+    { x: 2, y: 0 },
+    { x: 2, y: -1 },
+  ];
+
+  if (depth < slots.length) {
+    return slots[depth];
+  }
+
+  const overflowDepth = depth - slots.length;
+  return {
+    x: 3 + (overflowDepth % 2),
+    y: -Math.floor(overflowDepth / 2),
+  };
+}
 
 function getCollapsedDepth(index: number, selectedIndex: number, total: number): number {
   if (index === selectedIndex) {
@@ -64,32 +87,28 @@ function getMotionCardStyle(
   isExpandedTarget: boolean,
   offset = ZERO_OFFSET
 ): CSSProperties {
-  const column = index % 2;
-  const row = Math.floor(index / 2);
   const depth = getCollapsedDepth(index, selectedIndex, total);
 
   if (isExpandedTarget) {
+    const slot = getExpandedSlot(depth);
     return {
-      width: `${GRID_CARD_WIDTH}px`,
-      height: `${GRID_CARD_HEIGHT}px`,
+      width: '100%',
+      height: '100%',
       opacity: 1,
-      transform: `translate(${GRID_PADDING + column * (GRID_CARD_WIDTH + GRID_GAP) + offset.x}px, ${
-        GRID_PADDING + row * (GRID_CARD_HEIGHT + GRID_GAP) + offset.y
-      }px) rotate(0deg) scale(1)`,
-      zIndex: 20 + index,
+      transform: `translate(calc(${slot.x} * (100% + ${EXPANDED_GAP}px)), calc(${slot.y} * (100% + ${EXPANDED_GAP}px))) translate(${offset.x}px, ${offset.y}px) rotate(0deg) scale(1)`,
+      zIndex: 80 - depth,
       transition: `opacity ${STACK_MOTION_MS}ms ease-out, transform ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1), width ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1), height ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1)`,
-      transitionDelay: `${Math.min(index, 5) * 16}ms`,
+      transitionDelay: `${Math.min(depth, 5) * 16}ms`,
     };
   }
 
-  const visibleDepth = Math.min(depth, 3);
+  const visibleDepth = Math.min(depth, COLLAPSED_LAYER_TRANSFORMS.length - 1);
+  const collapsed = COLLAPSED_LAYER_TRANSFORMS[visibleDepth] ?? COLLAPSED_LAYER_TRANSFORMS[0];
   return {
     width: '100%',
     height: '100%',
-    opacity: depth > 2 ? 0 : 1 - visibleDepth * 0.14,
-    transform: `translate(${visibleDepth * 2.5}px, ${visibleDepth * 2}px) rotate(${
-      visibleDepth * 0.7
-    }deg) scale(${1 - visibleDepth * 0.015})`,
+    opacity: depth >= COLLAPSED_LAYER_TRANSFORMS.length ? 0 : collapsed.opacity,
+    transform: `translate(${collapsed.x + offset.x}px, ${collapsed.y + offset.y}px) rotate(${collapsed.rotate}deg) scale(${collapsed.scale})`,
     zIndex: 50 - visibleDepth,
     transition: `opacity ${STACK_MOTION_MS}ms ease-out, transform ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1), width ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1), height ${STACK_MOTION_MS}ms cubic-bezier(0.2, 0, 0, 1)`,
     transitionDelay: `${Math.min(depth, 5) * 10}ms`,
@@ -352,7 +371,7 @@ export function ImageResultStack({
 
   const selectedVariant = variants[selectedIndex] ?? variants[0];
   const deckVariants = [selectedVariant];
-  const layerCount = Math.min(3, variants.length);
+  const layerCount = Math.min(COLLAPSED_LAYER_TRANSFORMS.length, variants.length);
   for (let offset = 1; offset < layerCount; offset += 1) {
     deckVariants.push(variants[(selectedIndex + offset) % variants.length] ?? variants[offset]);
   }
@@ -361,11 +380,10 @@ export function ImageResultStack({
     <div
       className={[
         'relative',
-        isExpanded ? 'overflow-y-auto' : 'overflow-visible',
-        STACK_CONTAINER_MOTION_CLASS,
+        'overflow-visible',
         VIDEO_RESULT_SURFACE_CLASS,
       ].join(' ')}
-      style={{ height: `${contentHeight}px`, maxHeight: `${contentHeight}px` }}
+      style={{ height: `${contentHeight}px` }}
     >
       <div
         role={isExpanded ? undefined : 'button'}
@@ -399,6 +417,7 @@ export function ImageResultStack({
           .map(({ variant, layerIndex }) => {
             const imageUrl = resolveImageDisplayUrl(variant.imageUrl);
             const isTopLayer = layerIndex === 0;
+            const collapsedLayer = COLLAPSED_LAYER_TRANSFORMS[layerIndex] ?? COLLAPSED_LAYER_TRANSFORMS[0];
 
             return (
               <div
@@ -408,10 +427,10 @@ export function ImageResultStack({
                   zIndex: 30 - layerIndex,
                   borderColor: isTopLayer ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)',
                   boxShadow: STACK_LAYER_SHADOW,
-                  opacity: (1 - layerIndex * 0.14) * (isExpanded ? 0 : 1),
+                  opacity: collapsedLayer.opacity * (isExpanded ? 0 : 1),
                   transform: isExpanded
                     ? `translate(0px, 0px) rotate(0deg) scale(0.98)`
-                    : `translate(${layerIndex * 2.5}px, ${layerIndex * 2}px) rotate(${layerIndex * 0.7}deg) scale(${1 - layerIndex * 0.015})`,
+                    : `translate(${collapsedLayer.x}px, ${collapsedLayer.y}px) rotate(${collapsedLayer.rotate}deg) scale(${collapsedLayer.scale})`,
                 }}
               >
                 <img src={imageUrl} alt={t('node.imageResult.imageAlt')} className="h-full w-full object-cover" />
@@ -454,36 +473,26 @@ export function ImageResultStack({
         </div>
       ) : null}
 
-      <div
-        className={[
-          'relative grid grid-cols-2 gap-2 p-2',
-          STACK_VIEW_MOTION_CLASS,
-          isExpanded && !isMotionVisible && !dragPreview.isDragPreviewVisible
-            ? 'translate-y-0 scale-100 opacity-100'
-            : 'pointer-events-none translate-y-2 scale-[0.985] opacity-0',
-        ].join(' ')}
-      >
-        {variants.map((variant, index) => (
-          <div
-            key={variant.variantId}
-            className="transition-[opacity,transform] duration-200 ease-out"
-            style={{
-              transitionDelay: isExpanded ? `${Math.min(index, 5) * 24}ms` : '0ms',
-              opacity: isExpanded ? 1 : 0,
-              transform: isExpanded ? 'translateY(0) scale(1)' : 'translateY(6px) scale(0.98)',
-            }}
-          >
-            <ImageVariantCard
-              variant={variant}
-              index={index}
-              isSelected={index === selectedIndex}
-              onSelect={onSelect}
-              onPreview={onPreview}
-              onDelete={onDelete}
-            />
-          </div>
-        ))}
-      </div>
+      {isExpanded && !isMotionVisible && !dragPreview.isDragPreviewVisible ? (
+        <div className="absolute inset-0 z-50 overflow-visible">
+          {variants.map((variant, index) => (
+            <div
+              key={variant.variantId}
+              className="absolute left-0 top-0"
+              style={getMotionCardStyle(index, selectedIndex, variants.length, true)}
+            >
+              <ImageVariantCard
+                variant={variant}
+                index={index}
+                isSelected={index === selectedIndex}
+                onSelect={onSelect}
+                onPreview={onPreview}
+                onDelete={onDelete}
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <span
         className={[
