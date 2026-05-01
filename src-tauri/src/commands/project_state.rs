@@ -1,10 +1,11 @@
-use std::path::PathBuf;
 use std::collections::HashSet;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -50,6 +51,23 @@ fn resolve_db_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(app_data_dir.join("projects.db"))
 }
 
+fn column_exists(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+) -> std::result::Result<bool, rusqlite::Error> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({})", table))?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+
+    for name_result in rows {
+        if name_result? == column {
+            return Ok(true);
+        }
+    }
+
+    Ok(false)
+}
+
 fn ensure_projects_table(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(
         r#"
@@ -65,6 +83,7 @@ fn ensure_projects_table(conn: &Connection) -> Result<(), String> {
           history_json TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_projects_updated_at ON projects(updated_at DESC);
+        -- Legacy table names kept for compatibility; semantically these are episode_image_refs / episode_video_refs.
         CREATE TABLE IF NOT EXISTS project_image_refs (
           project_id TEXT NOT NULL,
           path TEXT NOT NULL,
@@ -135,6 +154,27 @@ fn ensure_projects_table(conn: &Connection) -> Result<(), String> {
         .map_err(|e| format!("Failed to add script_analysis_json column: {}", e))?;
     }
 
+    let has_show_id = column_exists(conn, "projects", "show_id")
+        .map_err(|e| format!("Failed to inspect projects show_id column: {}", e))?;
+    if !has_show_id {
+        conn.execute("ALTER TABLE projects ADD COLUMN show_id TEXT", [])
+            .map_err(|e| format!("Failed to add show_id column: {}", e))?;
+    }
+
+    let has_episode_number = column_exists(conn, "projects", "episode_number")
+        .map_err(|e| format!("Failed to inspect projects episode_number column: {}", e))?;
+    if !has_episode_number {
+        conn.execute("ALTER TABLE projects ADD COLUMN episode_number INTEGER", [])
+            .map_err(|e| format!("Failed to add episode_number column: {}", e))?;
+    }
+
+    conn.execute_batch(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_projects_show_id ON projects(show_id);
+        "#,
+    )
+    .map_err(|e| format!("Failed to initialize project episode indexes: {}", e))?;
+
     Ok(())
 }
 
@@ -177,6 +217,94 @@ CREATE INDEX IF NOT EXISTS idx_assets_storage_key ON assets(storage_key);
     .map_err(|e| format!("Failed to initialize show and asset tables: {}", e))?;
 
     Ok(())
+}
+
+fn migrate_projects_to_episodes(conn: &mut Connection) -> Result<(), String> {
+    let tx = conn
+        .transaction()
+        .map_err(|e| format!("Failed to begin projects episode migration: {}", e))?;
+
+    let migration_result = (|| -> Result<(), String> {
+        let projects_to_migrate = {
+            let mut stmt = tx
+                .prepare(
+                    r#"
+                    SELECT id, name, created_at, updated_at
+                    FROM projects
+                    WHERE show_id IS NULL
+                    "#,
+                )
+                .map_err(|e| format!("Failed to prepare projects episode migration: {}", e))?;
+
+            let rows = stmt
+                .query_map([], |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, i64>(2)?,
+                        row.get::<_, i64>(3)?,
+                    ))
+                })
+                .map_err(|e| format!("Failed to query projects episode migration: {}", e))?;
+
+            let mut projects = Vec::new();
+            for row_result in rows {
+                projects.push(
+                    row_result
+                        .map_err(|e| format!("Failed to decode projects episode row: {}", e))?,
+                );
+            }
+            projects
+        };
+
+        for (project_id, project_name, created_at, updated_at) in projects_to_migrate {
+            let show_id = Uuid::new_v4().to_string();
+            tx.execute(
+                r#"
+                INSERT INTO shows (
+                  id,
+                  user_id,
+                  title,
+                  description,
+                  cover_url,
+                  created_at,
+                  updated_at
+                )
+                VALUES (?1, 'local', ?2, NULL, NULL, ?3, ?4)
+                "#,
+                params![show_id, project_name, created_at, updated_at],
+            )
+            .map_err(|e| format!("Failed to insert migrated show: {}", e))?;
+
+            tx.execute(
+                r#"
+                UPDATE projects
+                SET show_id = ?1,
+                    episode_number = 1
+                WHERE id = ?2
+                "#,
+                params![show_id, project_id],
+            )
+            .map_err(|e| format!("Failed to update migrated episode project: {}", e))?;
+        }
+
+        Ok(())
+    })();
+
+    match migration_result {
+        Ok(()) => tx
+            .commit()
+            .map_err(|e| format!("Failed to commit projects episode migration: {}", e)),
+        Err(error) => {
+            tx.rollback().map_err(|rollback_error| {
+                format!(
+                    "Failed to rollback projects episode migration after error '{}': {}",
+                    error, rollback_error
+                )
+            })?;
+            Err(error)
+        }
+    }
 }
 
 fn parse_pool(history_json: &str, key: &str) -> Vec<String> {
@@ -239,7 +367,12 @@ fn collect_asset_paths_from_nodes(
             None => continue,
         };
 
-        for key in ["imageUrl", "previewImageUrl", "thumbnailRef", "_upstreamImageRef"] {
+        for key in [
+            "imageUrl",
+            "previewImageUrl",
+            "thumbnailRef",
+            "_upstreamImageRef",
+        ] {
             if let Some(raw_value) = data.get(key).and_then(|value| value.as_str()) {
                 if let Some(path) = resolve_image_ref(raw_value, image_pool) {
                     image_paths.insert(path);
@@ -253,11 +386,14 @@ fn collect_asset_paths_from_nodes(
             }
         }
 
-        if let Some(raw_value) = data.get("compositionImageUrl").and_then(|value| value.as_str()) {
+        if let Some(raw_value) = data
+            .get("compositionImageUrl")
+            .and_then(|value| value.as_str())
+        {
             if let Some(path) = resolve_image_ref(raw_value, image_pool) {
                 image_paths.insert(path);
-                }
             }
+        }
 
         if let Some(frames) = data.get("frames").and_then(|value| value.as_array()) {
             for frame in frames {
@@ -277,7 +413,10 @@ fn collect_asset_paths_from_nodes(
     }
 }
 
-fn extract_project_asset_paths(nodes_json: &str, history_json: &str) -> (HashSet<String>, HashSet<String>) {
+fn extract_project_asset_paths(
+    nodes_json: &str,
+    history_json: &str,
+) -> (HashSet<String>, HashSet<String>) {
     let image_pool = parse_image_pool(history_json);
     let video_pool = parse_video_pool(history_json);
     let mut image_paths = HashSet::new();
@@ -285,13 +424,22 @@ fn extract_project_asset_paths(nodes_json: &str, history_json: &str) -> (HashSet
 
     if let Ok(parsed_nodes) = serde_json::from_str::<serde_json::Value>(nodes_json) {
         if let Some(nodes) = parsed_nodes.as_array() {
-            collect_asset_paths_from_nodes(nodes, &image_pool, &video_pool, &mut image_paths, &mut video_paths);
+            collect_asset_paths_from_nodes(
+                nodes,
+                &image_pool,
+                &video_pool,
+                &mut image_paths,
+                &mut video_paths,
+            );
         }
     }
 
     if let Ok(parsed_history) = serde_json::from_str::<serde_json::Value>(history_json) {
         for timeline_key in ["past", "future"] {
-            let Some(timeline) = parsed_history.get(timeline_key).and_then(|value| value.as_array()) else {
+            let Some(timeline) = parsed_history
+                .get(timeline_key)
+                .and_then(|value| value.as_array())
+            else {
                 continue;
             };
 
@@ -299,7 +447,13 @@ fn extract_project_asset_paths(nodes_json: &str, history_json: &str) -> (HashSet
                 let Some(nodes) = snapshot.get("nodes").and_then(|value| value.as_array()) else {
                     continue;
                 };
-                collect_asset_paths_from_nodes(nodes, &image_pool, &video_pool, &mut image_paths, &mut video_paths);
+                collect_asset_paths_from_nodes(
+                    nodes,
+                    &image_pool,
+                    &video_pool,
+                    &mut image_paths,
+                    &mut video_paths,
+                );
             }
         }
     }
@@ -376,17 +530,20 @@ fn prune_unreferenced_dir(
 
 fn prune_unreferenced_images(app: &AppHandle) -> Result<(), String> {
     let images_dir = resolve_images_dir(app)?;
+    // project_image_refs is the compatibility name; semantically it tracks episode image refs.
     prune_unreferenced_dir(app, "project_image_refs", &images_dir, "image")
 }
 
 fn prune_unreferenced_videos(app: &AppHandle) -> Result<(), String> {
     let videos_dir = resolve_videos_dir(app)?;
+    // project_video_refs is the compatibility name; semantically it tracks episode video refs.
     prune_unreferenced_dir(app, "project_video_refs", &videos_dir, "video")
 }
 
 fn open_db(app: &AppHandle) -> Result<Connection, String> {
     let db_path = resolve_db_path(app)?;
-    let conn = Connection::open(db_path).map_err(|e| format!("Failed to open SQLite DB: {}", e))?;
+    let mut conn =
+        Connection::open(db_path).map_err(|e| format!("Failed to open SQLite DB: {}", e))?;
 
     conn.execute_batch("PRAGMA foreign_keys = ON;")
         .map_err(|e| format!("Failed to enable foreign_keys pragma: {}", e))?;
@@ -401,6 +558,7 @@ fn open_db(app: &AppHandle) -> Result<Connection, String> {
 
     ensure_projects_table(&conn)?;
     ensure_show_episode_asset_tables(&conn)?;
+    migrate_projects_to_episodes(&mut conn)?;
     Ok(conn)
 }
 
@@ -555,6 +713,7 @@ pub fn upsert_project_record(app: AppHandle, record: ProjectRecord) -> Result<()
     )
     .map_err(|e| format!("Failed to upsert project: {}", e))?;
 
+    // project_*_refs are compatibility names; semantically they track episode image/video refs.
     tx.execute(
         "DELETE FROM project_image_refs WHERE project_id = ?1",
         params![record.id],
@@ -645,6 +804,7 @@ pub fn delete_project_record(app: AppHandle, project_id: String) -> Result<(), S
 
     tx.execute("DELETE FROM projects WHERE id = ?1", params![project_id])
         .map_err(|e| format!("Failed to delete project: {}", e))?;
+    // project_*_refs are compatibility names; semantically they track episode image/video refs.
     tx.execute(
         "DELETE FROM project_image_refs WHERE project_id = ?1",
         params![project_id],
