@@ -71,14 +71,14 @@ interface UiModalProps {
 
 function resolveButtonVariant(variant: ButtonVariant): string {
   if (variant === 'primary') {
-    return 'bg-accent text-white hover:bg-accent/85';
+    return 'rounded-md bg-[var(--accent)] font-semibold text-white shadow-[0_4px_12px_-2px_rgba(233,78,27,0.45)] transition-all duration-150 hover:bg-[#F2693B] active:bg-[#C53A0F]';
   }
 
   if (variant === 'ghost') {
-    return 'bg-transparent text-text-dark hover:bg-[rgba(15,23,42,0.08)] dark:hover:bg-bg-dark/70';
+    return 'rounded-md border border-[color:var(--ui-border-soft)] bg-transparent text-[color:var(--text)] transition-colors duration-150 hover:bg-[rgba(11,11,13,0.04)] dark:hover:bg-[rgba(255,255,255,0.04)]';
   }
 
-  return 'bg-[rgba(15,23,42,0.08)] text-text-dark hover:bg-[rgba(15,23,42,0.14)] dark:bg-bg-dark/80 dark:hover:bg-bg-dark';
+  return 'rounded-md bg-[rgba(15,23,42,0.08)] font-medium text-text-dark transition-colors duration-150 hover:bg-[rgba(15,23,42,0.14)] dark:bg-bg-dark/80 dark:hover:bg-bg-dark';
 }
 
 function resolveButtonSize(size: ButtonSize): string {
@@ -93,7 +93,7 @@ export function UiButton({
 }: UiButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${resolveButtonVariant(variant)} ${resolveButtonSize(size)} ${className}`}
+      className={`inline-flex items-center justify-center disabled:cursor-not-allowed disabled:opacity-50 ${resolveButtonVariant(variant)} ${resolveButtonSize(size)} ${className}`}
       {...props}
     />
   );

@@ -15,7 +15,7 @@ import { ArrowUp, BarChart3, SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { getModelProvider } from '@/features/canvas/models';
-import { UiCheckbox, UiChipButton, UiInput, UiPanel, UiSelect } from '@/components/ui';
+import { UiButton, UiCheckbox, UiChipButton, UiInput, UiPanel, UiSelect } from '@/components/ui';
 
 type ParamValue = boolean | number | string;
 
@@ -406,8 +406,10 @@ export const ModelParamsControls = memo(function ModelParamsControls<TModel exte
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
         {renderedTokenBadge}
-        <button
+        <UiButton
           type="button"
+          variant="primary"
+          size="sm"
           onClick={(event) => {
             event.stopPropagation();
             onSubmit(event);
@@ -416,8 +418,8 @@ export const ModelParamsControls = memo(function ModelParamsControls<TModel exte
           title={submitTitle}
           className={
             submitVariant === 'circle'
-              ? 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/70 text-white shadow-lg ring-1 ring-white/25 backdrop-blur-md transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-50'
-              : 'inline-flex h-7 shrink-0 items-center justify-center rounded-md bg-accent px-3 text-xs font-medium text-white transition-colors hover:bg-accent/85 disabled:cursor-not-allowed disabled:opacity-50'
+              ? 'h-8 w-8 shrink-0 rounded-full px-0 ring-1 ring-white/25 backdrop-blur-md'
+              : 'h-7 shrink-0 px-3 text-xs'
           }
         >
           {submitVariant === 'circle' ? (
@@ -425,7 +427,7 @@ export const ModelParamsControls = memo(function ModelParamsControls<TModel exte
           ) : (
             submitLabel ?? t('canvas.generate')
           )}
-        </button>
+        </UiButton>
       </div>
 
       {typeof document !== 'undefined' && renderPanel === 'model' && createPortal(

@@ -122,7 +122,7 @@ export function ProjectManager() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <UiButton type="button" variant="muted" onClick={handleOpenTestProject} className="gap-2">
+            <UiButton type="button" variant="ghost" onClick={handleOpenTestProject} className="gap-2">
               <FolderOpen className="w-5 h-5" />
               {t('project.openTestProject')}
             </UiButton>
