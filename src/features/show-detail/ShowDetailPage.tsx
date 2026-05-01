@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Box, Loader2, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Box, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import {
   assetsApi,
@@ -12,10 +12,15 @@ import {
   type Episode,
   type Show,
 } from '@/api';
+import { call } from '@/api/client';
 import { UiButton } from '@/components/ui/primitives';
 import { storage } from '@/storage';
 
 const ASSET_CATEGORIES: AssetCategory[] = ['character', 'scene', 'prop', 'other'];
+
+type AssetApiWithUpdate = typeof assetsApi & {
+  updateAsset?: (input: { id: string; name: string }) => Promise<Asset>;
+};
 
 function isShowNotFoundError(error: unknown): boolean {
   const message = String(error).toLowerCase();
@@ -29,6 +34,30 @@ function createEmptyAssetGroups(): Record<AssetCategory, Asset[]> {
     prop: [],
     other: [],
   };
+}
+
+function createExpandedAssetSections(): Record<AssetCategory, boolean> {
+  return {
+    character: true,
+    scene: true,
+    prop: true,
+    other: true,
+  };
+}
+
+async function updateAssetName(asset: Asset, name: string): Promise<void> {
+  const updateAsset = (assetsApi as AssetApiWithUpdate).updateAsset;
+
+  if (updateAsset) {
+    await updateAsset({ id: asset.id, name });
+    return;
+  }
+
+  await call<unknown>('update_asset', {
+    id: asset.id,
+    name,
+    category: asset.category,
+  });
 }
 
 export function ShowDetailPage() {
@@ -46,6 +75,9 @@ export function ShowDetailPage() {
   const [isCreatingEpisode, setIsCreatingEpisode] = useState(false);
   const [isUploading, setUploading] = useState(false);
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<AssetCategory, boolean>>(
+    createExpandedAssetSections
+  );
 
   useEffect(() => {
     if (!showId) {
@@ -105,13 +137,13 @@ export function ShowDetailPage() {
 
   useEffect(() => {
     if (show) {
-      document.title = `${show.title} - 无限画布`;
+      document.title = `${show.title} - ${t('app.title')}`;
     }
 
     return () => {
-      document.title = '无限画布';
+      document.title = t('app.title');
     };
-  }, [show]);
+  }, [show, t]);
 
   const refreshShow = async () => {
     if (!showId) {
@@ -296,6 +328,30 @@ export function ShowDetailPage() {
     }
   };
 
+  const handleRenameAsset = async (asset: Asset, nextName: string) => {
+    const normalizedName = nextName.trim();
+
+    if (!normalizedName || normalizedName === asset.name) {
+      return;
+    }
+
+    try {
+      await updateAssetName(asset, normalizedName);
+      await refreshAssets();
+    } catch (error) {
+      console.error('Failed to rename asset', error);
+      window.alert(t('showDetail.renameAssetFailed'));
+      throw error;
+    }
+  };
+
+  const toggleAssetCategory = (category: AssetCategory) => {
+    setExpandedCategories((current) => ({
+      ...current,
+      [category]: !current[category],
+    }));
+  };
+
   const sortedEpisodes = useMemo(() => {
     return [...episodes].sort((a, b) => {
       const left = a.episode_number ?? Number.MAX_SAFE_INTEGER;
@@ -403,77 +459,103 @@ export function ShowDetailPage() {
 
         <aside className="lg:col-span-1">
           <div className="mb-4 flex items-center justify-between">
+            {/* Keep this title outside the card body so it shares a baseline with the right-side episodes title. */}
             <h2 className="text-lg font-semibold text-text-dark">{t('showDetail.assetLibrary')}</h2>
           </div>
 
-          <div className="space-y-4">
-            {ASSET_CATEGORIES.map((category) => {
-              const categoryAssets = assetsByCategory[category];
+          <div className="flex h-[calc(100vh-13rem)] min-h-[420px] flex-col overflow-hidden rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] shadow-panel">
+            <div className="ui-scrollbar flex-1 overflow-y-auto">
+              {ASSET_CATEGORIES.map((category) => {
+                const categoryAssets = assetsByCategory[category];
+                const isExpanded = expandedCategories[category];
+                const categoryLabel = t(`showDetail.assetCategory.${category}`);
 
-              return (
-                <section
-                  key={category}
-                  className="rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel"
-                >
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <h3 className="min-w-0 truncate text-sm font-semibold text-text-dark">
-                      {t(`showDetail.assetCategory.${category}`)}{' '}
-                      <span className="text-text-muted">({categoryAssets.length})</span>
-                    </h3>
-                    <label
-                      className={`inline-flex shrink-0 ${
-                        !show || isUploading ? 'pointer-events-none' : 'cursor-pointer'
-                      }`}
-                    >
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        disabled={!show || isUploading}
-                        onChange={(event) => {
-                          const files = event.currentTarget.files;
-                          void handleUpload(category, files);
-                          event.currentTarget.value = '';
-                        }}
-                      />
-                      <UiButton
+                return (
+                  <section
+                    key={category}
+                    className="border-b border-border-dark/70 last:border-b-0"
+                  >
+                    <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[color:var(--ui-border-soft)] bg-[var(--ui-surface-panel)] px-3 py-2">
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={!show || isUploading}
-                        className="pointer-events-none gap-1.5"
-                      >
-                        {isUploading ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Upload className="h-3.5 w-3.5" />
+                        aria-expanded={isExpanded}
+                        aria-label={t(
+                          isExpanded
+                            ? 'showDetail.collapseCategory'
+                            : 'showDetail.expandCategory',
+                          { category: categoryLabel }
                         )}
-                        {isUploading ? t('showDetail.uploading') : t('showDetail.uploadAsset')}
-                      </UiButton>
-                    </label>
-                  </div>
-
-                  {categoryAssets.length === 0 ? (
-                    <p className="text-xs text-[var(--text-muted)] py-2">
-                      {t('showDetail.assetCategoryEmpty', {
-                        category: t(`showDetail.assetCategory.${category}`),
-                      })}
-                    </p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {categoryAssets.map((asset) => (
-                        <AssetItem
-                          key={asset.id}
-                          asset={asset}
-                          onDelete={handleDeleteAsset}
+                        onClick={() => toggleAssetCategory(category)}
+                        className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-semibold text-text-dark"
+                      >
+                        <span className="w-4 shrink-0 text-text-muted" aria-hidden="true">
+                          {isExpanded ? '▾' : '▸'}
+                        </span>
+                        <span className="min-w-0 truncate">
+                          {categoryLabel}{' '}
+                          <span className="text-text-muted">({categoryAssets.length})</span>
+                        </span>
+                      </button>
+                      <label
+                        className={`inline-flex shrink-0 ${
+                          !show || isUploading ? 'pointer-events-none' : 'cursor-pointer'
+                        }`}
+                      >
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          disabled={!show || isUploading}
+                          onChange={(event) => {
+                            const files = event.currentTarget.files;
+                            void handleUpload(category, files);
+                            event.currentTarget.value = '';
+                          }}
                         />
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              );
-            })}
+                        <UiButton
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={!show || isUploading}
+                          className="pointer-events-none gap-1.5"
+                        >
+                          {isUploading ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Plus className="h-3.5 w-3.5" />
+                          )}
+                          {isUploading ? t('showDetail.uploading') : t('showDetail.uploadAsset')}
+                        </UiButton>
+                      </label>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="p-2">
+                        {categoryAssets.length === 0 ? (
+                          <p className="px-2 py-2 text-xs text-[var(--text-muted)]">
+                            {t('showDetail.assetCategoryEmpty', {
+                              category: categoryLabel,
+                            })}
+                          </p>
+                        ) : (
+                          <ul className="space-y-1">
+                            {categoryAssets.map((asset) => (
+                              <AssetItem
+                                key={asset.id}
+                                asset={asset}
+                                onDelete={handleDeleteAsset}
+                                onRename={handleRenameAsset}
+                              />
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
           </div>
         </aside>
 
@@ -556,13 +638,20 @@ export function ShowDetailPage() {
 interface AssetItemProps {
   asset: Asset;
   onDelete: (asset: Asset) => Promise<void>;
+  onRename: (asset: Asset, nextName: string) => Promise<void>;
 }
 
-function AssetItem({ asset, onDelete }: AssetItemProps) {
+function AssetItem({ asset, onDelete, onRename }: AssetItemProps) {
   const { t } = useTranslation();
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [isMissing, setIsMissing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(asset.name);
+  const [isSavingName, setIsSavingName] = useState(false);
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
+  const isCommittingNameRef = useRef(false);
+  const skipBlurCommitRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -589,6 +678,19 @@ function AssetItem({ asset, onDelete }: AssetItemProps) {
     };
   }, [asset.storage_key]);
 
+  useEffect(() => {
+    if (!isEditingName) {
+      setDraftName(asset.name);
+    }
+  }, [asset.name, isEditingName]);
+
+  useEffect(() => {
+    if (isEditingName) {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }
+  }, [isEditingName]);
+
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
@@ -598,8 +700,64 @@ function AssetItem({ asset, onDelete }: AssetItemProps) {
     }
   };
 
+  const startRename = () => {
+    skipBlurCommitRef.current = false;
+    setDraftName(asset.name);
+    setIsEditingName(true);
+  };
+
+  const cancelRename = () => {
+    skipBlurCommitRef.current = true;
+    setDraftName(asset.name);
+    setIsEditingName(false);
+  };
+
+  const commitRename = async () => {
+    if (isCommittingNameRef.current) {
+      return;
+    }
+
+    if (skipBlurCommitRef.current) {
+      skipBlurCommitRef.current = false;
+      return;
+    }
+
+    const normalizedName = draftName.trim();
+
+    if (!normalizedName || normalizedName === asset.name) {
+      setDraftName(asset.name);
+      setIsEditingName(false);
+      return;
+    }
+
+    isCommittingNameRef.current = true;
+    setIsSavingName(true);
+    try {
+      await onRename(asset, normalizedName);
+      setIsEditingName(false);
+    } catch {
+      renameInputRef.current?.focus();
+    } finally {
+      setIsSavingName(false);
+      isCommittingNameRef.current = false;
+    }
+  };
+
+  const handleNameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void commitRename();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelRename();
+    }
+  };
+
   return (
-    <li className="group flex items-center gap-2 rounded-md bg-bg-dark/40 px-2 py-1.5 text-sm text-text-dark">
+    <li className="group flex h-14 items-center gap-2 rounded-md bg-bg-dark/40 px-2 text-sm text-text-dark">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-bg-dark/70 text-text-muted">
         {objectUrl && !isMissing ? (
           <img
@@ -613,7 +771,27 @@ function AssetItem({ asset, onDelete }: AssetItemProps) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate">{asset.name}</div>
+        {isEditingName ? (
+          <input
+            ref={renameInputRef}
+            type="text"
+            value={draftName}
+            disabled={isSavingName}
+            onChange={(event) => setDraftName(event.currentTarget.value)}
+            onKeyDown={handleNameKeyDown}
+            onBlur={() => void commitRename()}
+            className="h-8 w-full rounded-md border border-[color:var(--ui-border-soft)] bg-[var(--ui-surface-field)] px-2 text-sm text-text-dark outline-none transition-colors focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+          />
+        ) : (
+          <button
+            type="button"
+            onDoubleClick={startRename}
+            className="block w-full truncate text-left"
+            title={t('showDetail.renameAsset')}
+          >
+            {asset.name}
+          </button>
+        )}
         {isMissing && (
           <div className="truncate text-[11px] leading-4 text-text-muted">
             {t('showDetail.assetMissing')}
