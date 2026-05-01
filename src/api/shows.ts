@@ -8,6 +8,8 @@ interface RawShow {
   title: string;
   description: string | null;
   cover_url: string | null;
+  episode_count: number;
+  done_episode_count: number;
   created_at: number;
   updated_at: number;
 }

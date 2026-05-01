@@ -1,12 +1,14 @@
 export interface Show {
   id: string; user_id: string; org_id: string | null; title: string;
   description: string | null; cover_url: string | null;
+  episode_count: number; done_episode_count: number;
   created_at: string; updated_at: string;  // ISO 8601
 }
 
 export interface Episode {
   id: string; show_id: string; user_id: string; title: string;
   episode_number: number | null; node_count: number;
+  is_done: boolean; completed_at: string | null;
   created_at: string; updated_at: string;
 }
 
