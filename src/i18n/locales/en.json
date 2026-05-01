@@ -30,6 +30,9 @@
     "addImage": "Add Image",
     "splitStoryboard": "Split Storyboard",
     "generate": "Generate",
+    "markDone": "✓ Mark as done",
+    "alreadyDone": "Done",
+    "markDoneFailed": "Failed to update",
     "emptyHintTitle": "Double-click to add a node",
     "emptyHintSubtitle": "Double-click to add a node",
     "toolbar": {
