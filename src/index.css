@@ -39,6 +39,7 @@
   --state-info-rgb: 122 162 255;
   --bg: #F4F1EC;
   --bg-rgb: 244 241 236;
+  --canvas-dot-color: rgba(11, 11, 13, 0.18);
   --surface: #F8F5F0;
   --surface-rgb: 248 245 240;
   --border: #e0e0e0;
@@ -128,6 +129,7 @@
 .dark {
   --bg: #0B0B0D;
   --bg-rgb: 11 11 13;
+  --canvas-dot-color: rgba(255, 255, 255, 0.10);
   --surface: #141417;
   --surface-rgb: 20 20 23;
   --border: #2A2A30;

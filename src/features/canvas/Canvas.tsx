@@ -27,6 +27,7 @@ import '@xyflow/react/dist/style.css';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { getConfiguredApiKeyCount, useSettingsStore } from '@/stores/settingsStore';
+import { useThemeStore } from '@/stores/themeStore';
 import { canvasAiGateway, canvasEventBus } from '@/features/canvas/application/canvasServices';
 import {
   CANVAS_NODE_TYPES,
@@ -111,6 +112,13 @@ const GENERATION_JOB_POLL_INTERVAL_MS = 1400;
 const AUTO_LAYOUT_LAYER_GAP = 220;
 const AUTO_LAYOUT_ROW_GAP = 80;
 const HANDLE_CLICK_DRAG_THRESHOLD_PX = 3;
+const CANVAS_DOT_FALLBACK_COLOR = '#2a2a2a';
+
+function readDotColor() {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue('--canvas-dot-color')
+    .trim();
+}
 
 interface GenerationStoryboardMetadata {
   gridRows: number;
@@ -385,6 +393,7 @@ export function Canvas() {
     handleType: HandleType;
     handleId: string | null;
   } | null>(null);
+  const [dotColor, setDotColor] = useState(CANVAS_DOT_FALLBACK_COLOR);
   const [previewConnectionVisual, setPreviewConnectionVisual] =
     useState<PreviewConnectionVisual | null>(null);
 
@@ -461,6 +470,23 @@ export function Canvas() {
   const cancelPendingViewportPersist = useProjectStore(
     (state) => state.cancelPendingViewportPersist
   );
+
+  const syncDotColor = useCallback(() => {
+    setDotColor(readDotColor() || CANVAS_DOT_FALLBACK_COLOR);
+  }, []);
+
+  useEffect(() => {
+    syncDotColor();
+    const unsubscribeTheme = useThemeStore.subscribe((state, previousState) => {
+      if (state.theme === previousState.theme) {
+        return;
+      }
+
+      queueMicrotask(syncDotColor);
+    });
+
+    return unsubscribeTheme;
+  }, [syncDotColor]);
 
   const persistCanvasSnapshot = useCallback(() => {
     if (isRestoringCanvasRef.current) {
@@ -2090,7 +2116,7 @@ export function Canvas() {
         proOptions={{ hideAttribution: true }}
         className={`bg-bg-dark${isMagneticConnecting ? ' magnetic-connecting' : ''}`}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#2a2a2a" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.5} color={dotColor} />
         <MiniMap
           className="canvas-minimap nopan nowheel !border-border-dark !bg-surface-dark"
           style={{ pointerEvents: 'all', zIndex: 10000 }}
