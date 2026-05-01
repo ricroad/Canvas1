@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
-import confetti from 'canvas-confetti';
 import { ArrowLeft } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { episodesApi } from '@/api';
@@ -10,32 +8,15 @@ import { UiButton } from '@/components/ui/primitives';
 import { LeftStrip } from '@/components/LeftStrip';
 import { CopilotPanel } from '@/features/copilot/CopilotPanel';
 import { ShowAssetPanel } from '@/features/show-asset-panel/ShowAssetPanel';
+import { useEpisodeMetaStore } from '@/stores/episodeMetaStore';
 import { useNavTitleStore } from '@/stores/navTitleStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { Canvas } from './Canvas';
 
-function fireDoneConfetti() {
-  void confetti({
-    particleCount: 200,
-    spread: 90,
-    origin: { y: 0.1 },
-    colors: ['#E94E1B', '#FF5A2E', '#3FCF8E', '#F2A93B', '#FFFFFF'],
-    ticks: 200,
-    scalar: 1.1,
-  });
-  window.setTimeout(() => {
-    void confetti({ particleCount: 120, spread: 70, origin: { x: 0.1, y: 0.1 } });
-    void confetti({ particleCount: 120, spread: 70, origin: { x: 0.9, y: 0.1 } });
-  }, 250);
-}
-
 export function EpisodeCanvasPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { showId, episodeId } = useParams();
   const [requestedEpisodeId, setRequestedEpisodeId] = useState<string | null>(null);
-  const [episodeIsDone, setEpisodeIsDone] = useState(false);
-  const [isDoneUpdating, setIsDoneUpdating] = useState(false);
   const currentProjectId = useProjectStore((state) => state.currentProjectId);
   const currentProject = useProjectStore((state) => state.currentProject);
   const isOpeningProject = useProjectStore((state) => state.isOpeningProject);
@@ -61,7 +42,7 @@ export function EpisodeCanvasPage() {
 
   useEffect(() => {
     if (!episodeId) {
-      setEpisodeIsDone(false);
+      useEpisodeMetaStore.getState().clear();
       return undefined;
     }
 
@@ -69,7 +50,7 @@ export function EpisodeCanvasPage() {
     episodesApi.getEpisode(episodeId)
       .then((episode) => {
         if (!isCancelled) {
-          setEpisodeIsDone(episode.is_done);
+          useEpisodeMetaStore.getState().setEpisode(episodeId, episode.is_done);
         }
       })
       .catch((error) => {
@@ -78,6 +59,7 @@ export function EpisodeCanvasPage() {
 
     return () => {
       isCancelled = true;
+      useEpisodeMetaStore.getState().clear();
     };
   }, [episodeId]);
 
@@ -85,31 +67,6 @@ export function EpisodeCanvasPage() {
     if (currentProject) useNavTitleStore.getState().setEpisodeTitle(currentProject.name);
     return () => useNavTitleStore.getState().setEpisodeTitle(null);
   }, [currentProject]);
-
-  const handleDoneToggle = async () => {
-    if (!episodeId || isDoneUpdating) {
-      return;
-    }
-
-    const nextIsDone = !episodeIsDone;
-    setIsDoneUpdating(true);
-
-    try {
-      const episode = await episodesApi.updateEpisodeMeta(episodeId, {
-        is_done: nextIsDone,
-      });
-      setEpisodeIsDone(episode.is_done);
-
-      if (nextIsDone) {
-        fireDoneConfetti();
-      }
-    } catch (error) {
-      console.error('Failed to update episode done state', error);
-      window.alert(t('canvas.markDoneFailed'));
-    } finally {
-      setIsDoneUpdating(false);
-    }
-  };
 
   if (!showId || !episodeId) {
     return <Navigate to="/shows" replace />;
@@ -144,19 +101,6 @@ export function EpisodeCanvasPage() {
   return (
     <ReactFlowProvider>
       <div className="relative h-full w-full">
-        <UiButton
-          type="button"
-          variant={episodeIsDone ? 'ghost' : 'primary'}
-          disabled={isDoneUpdating}
-          onClick={handleDoneToggle}
-          className={`absolute right-4 top-4 z-[80] ${
-            episodeIsDone
-              ? 'border-[#3FCF8E]/45 bg-[#3FCF8E]/10 text-[#3FCF8E] hover:bg-[#3FCF8E]/15'
-              : 'bg-[#E94E1B] hover:bg-[#FF5A2E] active:bg-[#C53A0F]'
-          }`}
-        >
-          {episodeIsDone ? `${t('canvas.alreadyDone')} ✓` : t('canvas.markDone')}
-        </UiButton>
         <Canvas key={episodeId} />
         <LeftStrip />
         <ShowAssetPanel />

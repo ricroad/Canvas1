@@ -1,8 +1,10 @@
 import { memo, useState, useCallback } from 'react';
-import { LayoutTemplate, Bot, Undo2, Redo2, Hand, Library, MousePointer2, Package, WandSparkles } from 'lucide-react';
+import confetti from 'canvas-confetti';
+import { LayoutTemplate, Bot, Undo2, Redo2, Hand, Library, MousePointer2, Package, WandSparkles, CircleCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCopilotStore } from '@/stores/copilotStore';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useEpisodeMetaStore } from '@/stores/episodeMetaStore';
 import { canvasEventBus } from '@/features/canvas/application/canvasServices';
 import { openSettingsDialog } from '@/features/settings/settingsEvents';
 import { useAssetLibraryStore } from '@/features/asset-library/assetLibraryStore';
@@ -15,11 +17,13 @@ interface ToolBtnProps {
   icon: React.ReactNode;
   tooltip: string;
   active?: boolean;
+  successActive?: boolean;
   disabled?: boolean;
   onClick?: () => void;
+  className?: string;
 }
 
-const ToolBtn = memo(({ icon, tooltip, active, disabled, onClick }: ToolBtnProps) => {
+const ToolBtn = memo(({ icon, tooltip, active, successActive, disabled, onClick, className }: ToolBtnProps) => {
   const [hover, setHover] = useState(false);
 
   return (
@@ -32,10 +36,13 @@ const ToolBtn = memo(({ icon, tooltip, active, disabled, onClick }: ToolBtnProps
           rounded-[12px] transition-all duration-180 ease-out
           active:scale-[0.88]
           disabled:opacity-25 disabled:pointer-events-none
-          ${active
+          ${successActive
+            ? 'bg-[rgb(var(--state-success-rgb)_/_0.12)] text-[var(--state-success)] ring-1 ring-inset ring-[var(--state-success)] hover:bg-[rgb(var(--state-success-rgb)_/_0.12)] hover:text-[var(--state-success)]'
+            : active
             ? 'bg-[rgb(var(--accent-rgb)_/_0.12)] text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)] hover:bg-[rgb(var(--accent-rgb)_/_0.12)] hover:text-[var(--accent)]'
             : 'bg-transparent text-[var(--copilot-text-secondary)] hover:bg-[var(--strip-btn-hover-bg)] hover:text-[var(--copilot-text-primary)]'
           }
+          ${className ?? ''}
         `}
         onClick={onClick}
         onMouseEnter={() => setHover(true)}
@@ -88,6 +95,22 @@ export const LeftStrip = memo(() => {
   const redo = useCanvasStore((s) => s.redo);
   const canUndo = useCanvasStore((s) => s.history.past.length > 0);
   const canRedo = useCanvasStore((s) => s.history.future.length > 0);
+  const { episodeId, isDone, loading } = useEpisodeMetaStore();
+  const [isPopped, setIsPopped] = useState(false);
+
+  const handleToggleDone = useCallback(async () => {
+    setIsPopped(true);
+    setTimeout(() => setIsPopped(false), 400);
+    try {
+      const result = await useEpisodeMetaStore.getState().toggleDone();
+      if (result?.becameDone) {
+        void confetti({ particleCount: 60, angle: 60, spread: 55, origin: { x: 0, y: 0 }, colors: ['#E94E1B','#FF5A2E','#3FCF8E','#F2A93B','#FFFFFF'] });
+        void confetti({ particleCount: 60, angle: 120, spread: 55, origin: { x: 1, y: 0 }, colors: ['#E94E1B','#FF5A2E','#3FCF8E','#F2A93B','#FFFFFF'] });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   return (
     <div
@@ -164,6 +187,18 @@ export const LeftStrip = memo(() => {
         tooltip={t('common.redo', 'Redo')}
         disabled={!canRedo}
         onClick={redo}
+      />
+
+      <Divider />
+
+      <ToolBtn
+        icon={<CircleCheck className="h-[17px] w-[17px]" />}
+        tooltip={isDone ? t('canvas.alreadyDone') : t('canvas.markDone')}
+        active={isDone}
+        successActive={isDone}
+        disabled={!episodeId || loading}
+        onClick={handleToggleDone}
+        className={isPopped ? 'tool-btn-popped' : ''}
       />
     </div>
   );

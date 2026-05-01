@@ -372,6 +372,17 @@ html[data-platform='macos'] #root {
   }
 }
 
+@keyframes pop-bounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.86); }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.tool-btn-popped {
+  animation: pop-bounce 380ms cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
 .magnetic-handle {
   width: 1px !important;
   height: 1px !important;
