@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { FolderOpen, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 import { showsApi, type Show } from '@/api';
+import { BrandLogo } from '@/components/BrandLogo';
 import { UI_CONTENT_OVERLAY_INSET_CLASS } from '@/components/ui/motion';
 import { UiButton, UiSelect } from '@/components/ui/primitives';
 import { MissingApiKeyHint } from '@/features/settings/MissingApiKeyHint';
@@ -23,6 +24,7 @@ export function ShowListPage() {
   const navigate = useNavigate();
   const [shows, setShows] = useState<Show[]>([]);
   const [isLoadingShows, setIsLoadingShows] = useState(true);
+  const [loadError, setLoadError] = useState<unknown | null>(null);
   const [isCreatingShow, setIsCreatingShow] = useState(false);
   const [deletingShowId, setDeletingShowId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<ShowSortField>('createdAt');
@@ -37,6 +39,7 @@ export function ShowListPage() {
 
     const loadShows = async () => {
       setIsLoadingShows(true);
+      setLoadError(null);
       try {
         const nextShows = await fetchShows();
         if (isMounted) {
@@ -44,6 +47,9 @@ export function ShowListPage() {
         }
       } catch (error) {
         console.error('Failed to load shows', error);
+        if (isMounted) {
+          setLoadError(error);
+        }
       } finally {
         if (isMounted) {
           setIsLoadingShows(false);
@@ -121,6 +127,7 @@ export function ShowListPage() {
 
     return list;
   }, [shows, sortDirection, sortField]);
+  const isEmptyState = !isLoadingShows && !loadError && shows.length === 0;
 
   return (
     <div className="ui-scrollbar h-full w-full overflow-auto p-8">
@@ -134,42 +141,44 @@ export function ShowListPage() {
         `}
       </style>
       <div className="max-w-5xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-text-dark">{t('showList.title')}</h1>
-            <div className="flex items-center gap-2">
-              <UiSelect
-                aria-label={t('project.sortBy')}
-                value={sortField}
-                onChange={(event) => setSortField(event.target.value as ShowSortField)}
-                className="h-9 w-[100px] rounded-lg text-sm"
-              >
-                <option value="title">{t('project.sortByName')}</option>
-                <option value="createdAt">{t('project.sortByCreatedAt')}</option>
-                <option value="updatedAt">{t('project.sortByUpdatedAt')}</option>
-              </UiSelect>
-              <UiSelect
-                aria-label={t('project.sortDirection')}
-                value={sortDirection}
-                onChange={(event) => setSortDirection(event.target.value as SortDirection)}
-                className="h-9 w-[60px] rounded-lg text-sm"
-              >
-                <option value="asc">{t('project.sortAsc')}</option>
-                <option value="desc">{t('project.sortDesc')}</option>
-              </UiSelect>
+        {!isEmptyState && (
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-text-dark">{t('showList.title')}</h1>
+              <div className="flex items-center gap-2">
+                <UiSelect
+                  aria-label={t('project.sortBy')}
+                  value={sortField}
+                  onChange={(event) => setSortField(event.target.value as ShowSortField)}
+                  className="h-9 w-[100px] rounded-lg text-sm"
+                >
+                  <option value="title">{t('project.sortByName')}</option>
+                  <option value="createdAt">{t('project.sortByCreatedAt')}</option>
+                  <option value="updatedAt">{t('project.sortByUpdatedAt')}</option>
+                </UiSelect>
+                <UiSelect
+                  aria-label={t('project.sortDirection')}
+                  value={sortDirection}
+                  onChange={(event) => setSortDirection(event.target.value as SortDirection)}
+                  className="h-9 w-[60px] rounded-lg text-sm"
+                >
+                  <option value="asc">{t('project.sortAsc')}</option>
+                  <option value="desc">{t('project.sortDesc')}</option>
+                </UiSelect>
+              </div>
             </div>
+            <UiButton
+              type="button"
+              variant="primary"
+              onClick={handleCreateShow}
+              disabled={isCreatingShow}
+              className="gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              {t('showList.newShow')}
+            </UiButton>
           </div>
-          <UiButton
-            type="button"
-            variant="primary"
-            onClick={handleCreateShow}
-            disabled={isCreatingShow}
-            className="gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            {t('showList.newShow')}
-          </UiButton>
-        </div>
+        )}
 
         {configuredApiKeyCount === 0 && <MissingApiKeyHint className="mb-8" />}
 
@@ -177,20 +186,26 @@ export function ShowListPage() {
           <div className="flex items-center justify-center py-20 text-text-muted">
             {t('common.loading')}
           </div>
-        ) : sortedShows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-text-muted">
-            <FolderOpen className="w-16 h-16 mb-4 opacity-50" />
-            <p className="text-lg">{t('showList.title')}</p>
-            <UiButton
-              type="button"
-              variant="ghost"
-              onClick={handleCreateShow}
-              disabled={isCreatingShow}
-              className="mt-4 gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              {t('showList.newShow')}
-            </UiButton>
+        ) : loadError ? (
+          <div className="flex items-center justify-center py-20 text-text-muted">
+            {t('common.error')}
+          </div>
+        ) : isEmptyState ? (
+          <div className="flex min-h-[50vh] flex-col items-center justify-center text-center text-text-muted">
+            <BrandLogo size={72} variant="mark" className="mb-5 rounded-2xl shadow-panel" />
+            <h1 className="text-2xl font-bold text-text-dark">{t('showList.emptyTitle')}</h1>
+            <p className="mt-2 text-sm leading-6">{t('showList.emptyHint')}</p>
+            <div className="mt-6">
+              <UiButton
+                type="button"
+                variant="primary"
+                onClick={handleCreateShow}
+                disabled={isCreatingShow}
+                className="gap-2"
+              >
+                {t('showList.createFirst')}
+              </UiButton>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

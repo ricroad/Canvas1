@@ -310,7 +310,10 @@
     "title": "Show Library",
     "newShow": "New Show",
     "newShowTitle": "Enter show title",
-    "confirmDeleteShow": "Confirm delete this show?"
+    "confirmDeleteShow": "Confirm delete this show?",
+    "emptyTitle": "Welcome to Canvas Creation",
+    "emptyHint": "Create your first show to start",
+    "createFirst": "+ Create show"
   },
   "showDetail": {
     "notFound": "Show not found or deleted",
