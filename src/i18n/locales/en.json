@@ -323,6 +323,7 @@
     "deleteShow": "Delete Show",
     "confirmDeleteShow": "Delete this show? All episodes and assets will be lost.",
     "assetLibrary": "Asset Library",
+    "assetCategoryEmpty": "No {{category}} yet",
     "assetCategory": {
       "character": "Character",
       "scene": "Scene",
@@ -335,7 +336,9 @@
     "uploadFailed": "Upload failed",
     "assetMissing": "Asset file missing",
     "episodes": "Episodes",
+    "episodesEmpty": "No episodes yet. Create the first one to start your storyboard.",
     "newEpisode": "New Episode",
+    "createFirstEpisode": "+ Create first episode",
     "newEpisodeTitle": "Enter episode title",
     "episodeNumber": "Episode {{n}}",
     "confirmDeleteEpisode": "Delete this episode? Canvas data will be lost.",

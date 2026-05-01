@@ -455,7 +455,11 @@ export function ShowDetailPage() {
                   </div>
 
                   {categoryAssets.length === 0 ? (
-                    <div className="h-8" />
+                    <p className="text-xs text-[var(--text-muted)] py-2">
+                      {t('showDetail.assetCategoryEmpty', {
+                        category: t(`showDetail.assetCategory.${category}`),
+                      })}
+                    </p>
                   ) : (
                     <ul className="space-y-2">
                       {categoryAssets.map((asset) => (
@@ -491,6 +495,13 @@ export function ShowDetailPage() {
           {isLoading ? (
             <div className="flex items-center justify-center py-20 text-text-muted">
               {t('common.loading')}
+            </div>
+          ) : episodes.length === 0 && !loadFailed ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+              <p className="text-[var(--text-muted)] max-w-sm">{t('showDetail.episodesEmpty')}</p>
+              <UiButton variant="primary" onClick={handleCreateEpisode}>
+                {t('showDetail.createFirstEpisode')}
+              </UiButton>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">

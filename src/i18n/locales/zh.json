@@ -350,6 +350,7 @@
     "deleteShow": "删除剧",
     "confirmDeleteShow": "确认删除这部剧吗？删除后所有单集和资产都会丢失。",
     "assetLibrary": "剧资产库",
+    "assetCategoryEmpty": "暂无{{category}}",
     "assetCategory": {
       "character": "人物",
       "scene": "场景",
@@ -362,7 +363,9 @@
     "uploadFailed": "上传失败",
     "assetMissing": "资产文件丢失",
     "episodes": "单集",
+    "episodesEmpty": "还没有单集，创建第一集开始你的故事板",
     "newEpisode": "新建单集",
+    "createFirstEpisode": "+ 新建第一集",
     "newEpisodeTitle": "请输入单集标题",
     "episodeNumber": "第 {{n}} 集",
     "confirmDeleteEpisode": "确认删除这一集吗？画布数据将一并丢失。",
