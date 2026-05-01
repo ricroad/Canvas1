@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
+import { ImageOff, Plus, Trash2 } from 'lucide-react';
 
 import { showsApi, type Show } from '@/api';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -10,6 +10,7 @@ import { UiButton, UiSelect } from '@/components/ui/primitives';
 import { MissingApiKeyHint } from '@/features/settings/MissingApiKeyHint';
 import { listModelProviders } from '@/features/canvas/models';
 import { getConfiguredApiKeyCount, useSettingsStore } from '@/stores/settingsStore';
+import { storage } from '@/storage';
 
 type ShowSortField = 'title' | 'createdAt' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
@@ -17,6 +18,69 @@ type SortDirection = 'asc' | 'desc';
 async function fetchShows(): Promise<Show[]> {
   const response = await showsApi.listShows();
   return response.items;
+}
+
+interface ShowCoverProps {
+  coverKey: string | null | undefined;
+}
+
+function ShowCover({ coverKey }: ShowCoverProps) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [isMissing, setIsMissing] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setObjectUrl(null);
+    setIsMissing(false);
+
+    if (!coverKey) {
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    storage
+      .getObjectUrl(coverKey)
+      .then((url) => {
+        if (isMounted) {
+          setObjectUrl(url);
+        }
+      })
+      .catch((error) => {
+        console.warn('Failed to resolve show cover URL', error);
+        if (isMounted) {
+          setIsMissing(true);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [coverKey]);
+
+  const showPlaceholder = !coverKey || isMissing;
+  const isResolving = Boolean(coverKey) && !objectUrl && !isMissing;
+
+  return (
+    <div className="h-[120px] w-20 shrink-0 overflow-hidden rounded-md border border-[color:var(--ui-border-soft)] bg-[var(--surface)] p-1 shadow-sm">
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded bg-[var(--surface)]">
+        {coverKey && objectUrl && !isMissing ? (
+          <img
+            src={objectUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            draggable={false}
+            onError={() => setIsMissing(true)}
+          />
+        ) : isResolving ? (
+          <div className="h-full w-full bg-[var(--surface)]" />
+        ) : showPlaceholder ? (
+          <ImageOff className="h-7 w-7 text-text-muted opacity-30" />
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 export function ShowListPage() {
@@ -208,35 +272,40 @@ export function ShowListPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sortedShows.map((show) => (
               <div
                 key={show.id}
                 onClick={() => navigate(`/shows/${show.id}`)}
                 className="group cursor-pointer rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
               >
-                <div className="mb-4 h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:show-card-record-pulse_180ms_ease-out_1]" />
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-6 text-text-dark">
-                    {show.title}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={(event) => void handleDeleteShow(show.id, event)}
-                    disabled={deletingShowId === show.id}
-                    className="shrink-0 rounded p-1 text-text-muted opacity-0 transition-[background-color,color,opacity] hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))] disabled:cursor-not-allowed disabled:opacity-40 group-hover:opacity-100"
-                    title={t('common.delete')}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="space-y-1 font-mono text-xs leading-5 text-text-muted">
-                  <p>
-                    {t('project.modified')}: {formatDate(show.updated_at)}
-                  </p>
-                  <p>
-                    {t('project.created')}: {formatDate(show.created_at)}
-                  </p>
+                <div className="flex min-h-[120px] gap-4">
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div className="h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:show-card-record-pulse_180ms_ease-out_1]" />
+                      <button
+                        type="button"
+                        onClick={(event) => void handleDeleteShow(show.id, event)}
+                        disabled={deletingShowId === show.id}
+                        className="shrink-0 rounded p-1 text-text-muted opacity-0 transition-[background-color,color,opacity] hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))] disabled:cursor-not-allowed disabled:opacity-40 group-hover:opacity-100"
+                        title={t('common.delete')}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <h3 className="min-w-0 truncate text-base font-semibold leading-6 text-text-dark">
+                      {show.title}
+                    </h3>
+                    <div className="mt-auto space-y-1 pt-3 font-mono text-xs leading-5 text-text-muted">
+                      <p>
+                        {t('project.modified')}: {formatDate(show.updated_at)}
+                      </p>
+                      <p>
+                        {t('project.created')}: {formatDate(show.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <ShowCover coverKey={show.cover_url} />
                 </div>
               </div>
             ))}
