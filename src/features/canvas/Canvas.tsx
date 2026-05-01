@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  type DragEvent as ReactDragEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 import {
@@ -64,6 +65,7 @@ import { ImageViewerModal } from './ui/ImageViewerModal';
 import { MagneticConnectionProvider } from './ui/MagneticHandle';
 import { MissingApiKeyHint } from '@/features/settings/MissingApiKeyHint';
 import { useCopilotStore } from '@/stores/copilotStore';
+import { useShowAssetPanelStore } from '@/features/show-asset-panel/showAssetPanelStore';
 import { useHandleVisibility } from './hooks/useHandleVisibility';
 import { AssetLibraryPanel } from '@/features/asset-library/AssetLibraryPanel';
 import { downloadAssets } from '@/features/asset-library/downloadAssets';
@@ -113,6 +115,14 @@ const AUTO_LAYOUT_LAYER_GAP = 220;
 const AUTO_LAYOUT_ROW_GAP = 80;
 const HANDLE_CLICK_DRAG_THRESHOLD_PX = 3;
 const CANVAS_DOT_FALLBACK_COLOR = '#2a2a2a';
+const SHOW_ASSET_DRAG_MIME = 'application/x-reelforce-show-asset';
+
+interface ShowAssetDragPayload {
+  assetId?: unknown;
+  storageKey?: unknown;
+  name?: unknown;
+  mimeType?: unknown;
+}
 
 function readDotColor() {
   return getComputedStyle(document.documentElement)
@@ -1358,6 +1368,60 @@ export function Canvas() {
     setPreviewConnectionVisual(null);
   }, [openNodeMenuAtClientPosition, setSelectedNode]);
 
+  const handleDragOver = useCallback((event: ReactDragEvent) => {
+    if (!Array.from(event.dataTransfer.types).includes(SHOW_ASSET_DRAG_MIME)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: ReactDragEvent) => {
+      if (!Array.from(event.dataTransfer.types).includes(SHOW_ASSET_DRAG_MIME)) {
+        return;
+      }
+
+      event.preventDefault();
+
+      let payload: ShowAssetDragPayload;
+      try {
+        payload = JSON.parse(event.dataTransfer.getData(SHOW_ASSET_DRAG_MIME)) as ShowAssetDragPayload;
+      } catch {
+        return;
+      }
+
+      const storageKey = typeof payload.storageKey === 'string' ? payload.storageKey.trim() : '';
+      if (!storageKey) {
+        return;
+      }
+
+      const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+      const mimeType = typeof payload.mimeType === 'string' ? payload.mimeType.trim() : '';
+      const nodeData: Record<string, unknown> = {
+        storageKey,
+      };
+
+      if (name) {
+        nodeData.displayName = name;
+        nodeData.name = name;
+      }
+      if (mimeType) {
+        nodeData.mimeType = mimeType;
+      }
+
+      addNode(
+        CANVAS_NODE_TYPES.exportImage,
+        reactFlowInstance.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+        nodeData
+      );
+      scheduleCanvasPersist(0);
+      useShowAssetPanelStore.getState().close();
+    },
+    [addNode, reactFlowInstance, scheduleCanvasPersist]
+  );
+
   const handleNodeSelect = useCallback(
     (type: CanvasNodeType) => {
       const newNodeId = addNode(type, flowPosition);
@@ -2092,6 +2156,8 @@ export function Canvas() {
         onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
         onPaneClick={handlePaneClick}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
         onMove={handleMove}
         onMoveStart={handleMoveStart}
         onMoveEnd={handleMoveEnd}
