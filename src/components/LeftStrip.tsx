@@ -26,24 +26,16 @@ const ToolBtn = memo(({ icon, tooltip, active, disabled, onClick }: ToolBtnProps
       <button
         type="button"
         disabled={disabled}
-        className="
+        className={`
           relative flex h-[38px] w-[38px] items-center justify-center
           rounded-[12px] transition-all duration-180 ease-out
           active:scale-[0.88]
           disabled:opacity-25 disabled:pointer-events-none
-        "
-        style={{
-          background: active
-            ? 'rgba(var(--accent-rgb) / 0.14)'
-            : hover
-              ? 'var(--strip-btn-hover-bg)'
-              : 'transparent',
-          color: active
-            ? 'var(--accent)'
-            : hover
-              ? 'var(--copilot-text-primary)'
-              : 'var(--copilot-text-secondary)',
-        }}
+          ${active
+            ? 'bg-[rgb(var(--accent-rgb)_/_0.12)] text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)] hover:bg-[rgb(var(--accent-rgb)_/_0.12)] hover:text-[var(--accent)]'
+            : 'bg-transparent text-[var(--copilot-text-secondary)] hover:bg-[var(--strip-btn-hover-bg)] hover:text-[var(--copilot-text-primary)]'
+          }
+        `}
         onClick={onClick}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
@@ -56,12 +48,12 @@ const ToolBtn = memo(({ icon, tooltip, active, disabled, onClick }: ToolBtnProps
           className="
             pointer-events-none absolute left-full top-1/2 z-50
             ml-3 -translate-y-1/2 whitespace-nowrap
-            rounded-[10px] px-3 py-1.5 text-[11px] font-medium
+            rounded-[10px] border border-[color:var(--brand-ink-700)]
+            bg-[rgba(11,11,13,0.92)] px-3 py-1.5
+            font-mono text-[11px] font-medium text-white
+            dark:bg-[rgba(20,20,23,0.95)]
           "
           style={{
-            background: 'var(--copilot-card-bg)',
-            color: 'var(--copilot-text-primary)',
-            border: '1px solid var(--copilot-card-border)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.12), 0 0 0 0.5px var(--copilot-card-border)',
             backdropFilter: 'blur(20px)',
           }}
@@ -105,8 +97,8 @@ export const LeftStrip = memo(() => {
         background: 'var(--strip-pill-bg)',
         border: '1px solid var(--strip-pill-border)',
         boxShadow: 'var(--strip-pill-shadow)',
-        backdropFilter: 'blur(28px) saturate(1.8)',
-        WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
+        backdropFilter: 'blur(20px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(140%)',
       }}
     >
       <ToolBtn
