@@ -138,6 +138,47 @@ fn ensure_projects_table(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
+fn ensure_show_episode_asset_tables(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch(
+        r#"
+-- Top-level show container
+CREATE TABLE IF NOT EXISTS shows (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL DEFAULT 'local',
+  org_id TEXT,
+  title TEXT NOT NULL,
+  description TEXT,
+  cover_url TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_shows_user_id ON shows(user_id);
+CREATE INDEX IF NOT EXISTS idx_shows_updated_at ON shows(updated_at DESC);
+
+-- Show-scoped shared assets
+CREATE TABLE IF NOT EXISTS assets (
+  id TEXT PRIMARY KEY,
+  show_id TEXT NOT NULL REFERENCES shows(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL DEFAULT 'local',
+  category TEXT NOT NULL,
+  name TEXT NOT NULL,
+  storage_key TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  thumbnail_key TEXT,
+  metadata_json TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_assets_show_id_category ON assets(show_id, category);
+CREATE INDEX IF NOT EXISTS idx_assets_storage_key ON assets(storage_key);
+"#,
+    )
+    .map_err(|e| format!("Failed to initialize show and asset tables: {}", e))?;
+
+    Ok(())
+}
+
 fn parse_pool(history_json: &str, key: &str) -> Vec<String> {
     let parsed: serde_json::Value = match serde_json::from_str(history_json) {
         Ok(value) => value,
@@ -347,6 +388,8 @@ fn open_db(app: &AppHandle) -> Result<Connection, String> {
     let db_path = resolve_db_path(app)?;
     let conn = Connection::open(db_path).map_err(|e| format!("Failed to open SQLite DB: {}", e))?;
 
+    conn.execute_batch("PRAGMA foreign_keys = ON;")
+        .map_err(|e| format!("Failed to enable foreign_keys pragma: {}", e))?;
     conn.pragma_update(None, "journal_mode", "WAL")
         .map_err(|e| format!("Failed to set journal_mode=WAL: {}", e))?;
     conn.pragma_update(None, "synchronous", "NORMAL")
@@ -357,6 +400,7 @@ fn open_db(app: &AppHandle) -> Result<Connection, String> {
         .map_err(|e| format!("Failed to set busy timeout: {}", e))?;
 
     ensure_projects_table(&conn)?;
+    ensure_show_episode_asset_tables(&conn)?;
     Ok(conn)
 }
 
