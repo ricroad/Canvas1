@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Box, ImagePlus, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Box, ImagePlus, Loader2, Pencil, Plus, Settings, Trash2 } from 'lucide-react';
 
 import {
   assetsApi,
@@ -76,8 +76,10 @@ export function ShowDetailPage() {
   const [isCreatingEpisode, setIsCreatingEpisode] = useState(false);
   const [isUploading, setUploading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<AssetCategory, boolean>>(
     createExpandedAssetSections
   );
@@ -152,6 +154,34 @@ export function ShowDetailPage() {
       document.title = t('app.title');
     };
   }, [show, t]);
+
+  useEffect(() => {
+    if (!isSettingsMenuOpen) {
+      return;
+    }
+
+    const handleDocumentMouseDown = (event: globalThis.MouseEvent) => {
+      const target = event.target;
+      if (target instanceof Node && settingsMenuRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsSettingsMenuOpen(false);
+    };
+
+    const handleDocumentKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSettingsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleDocumentMouseDown);
+    document.addEventListener('keydown', handleDocumentKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleDocumentMouseDown);
+      document.removeEventListener('keydown', handleDocumentKeyDown);
+    };
+  }, [isSettingsMenuOpen]);
 
   const refreshShow = async () => {
     if (!showId) {
@@ -497,16 +527,41 @@ export function ShowDetailPage() {
               <Pencil className="h-4 w-4" />
               {t('showDetail.renameShow')}
             </UiButton>
-            <UiButton
-              type="button"
-              variant="ghost"
-              onClick={handleDeleteShow}
-              disabled={!show || isDeletingShow}
-              className="gap-2 text-[rgb(var(--state-error-rgb))]"
-            >
-              <Trash2 className="h-4 w-4" />
-              {t('showDetail.deleteShow')}
-            </UiButton>
+            <div ref={settingsMenuRef} className="relative">
+              <UiButton
+                type="button"
+                variant="ghost"
+                aria-label={t('showDetail.showSettings')}
+                aria-haspopup="menu"
+                aria-expanded={isSettingsMenuOpen}
+                title={t('showDetail.showSettings')}
+                onClick={() => setIsSettingsMenuOpen((current) => !current)}
+                disabled={!show || isDeletingShow}
+                className="px-3"
+              >
+                <Settings className="h-4 w-4" />
+              </UiButton>
+              {isSettingsMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-30 mt-2 w-36 rounded-lg border border-[color:var(--ui-border-soft)] bg-[var(--ui-surface-panel)] p-1 shadow-panel"
+                  style={{ backdropFilter: 'blur(20px) saturate(1.4)' }}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-[color:var(--state-error)] transition-colors hover:bg-[rgba(255,77,79,0.08)]"
+                    onClick={() => {
+                      setIsSettingsMenuOpen(false);
+                      void handleDeleteShow();
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {t('showDetail.deleteShow')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
