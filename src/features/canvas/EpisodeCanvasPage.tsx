@@ -7,6 +7,7 @@ import { UiButton } from '@/components/ui/primitives';
 import { LeftStrip } from '@/components/LeftStrip';
 import { CopilotPanel } from '@/features/copilot/CopilotPanel';
 import { ShowAssetPanel } from '@/features/show-asset-panel/ShowAssetPanel';
+import { useNavTitleStore } from '@/stores/navTitleStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { Canvas } from './Canvas';
 
@@ -36,6 +37,11 @@ export function EpisodeCanvasPage() {
       useProjectStore.getState().closeProject();
     };
   }, [episodeId]);
+
+  useEffect(() => {
+    if (currentProject) useNavTitleStore.getState().setEpisodeTitle(currentProject.name);
+    return () => useNavTitleStore.getState().setEpisodeTitle(null);
+  }, [currentProject]);
 
   if (!showId || !episodeId) {
     return <Navigate to="/shows" replace />;

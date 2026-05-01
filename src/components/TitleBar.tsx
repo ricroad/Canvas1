@@ -6,6 +6,7 @@ import { Moon, Sun, Languages } from 'lucide-react';
 import { useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { isTauriEnv } from '@/commands/platform';
 import { BrandLogo } from '@/components/BrandLogo';
+import { useNavTitleStore } from '@/stores/navTitleStore';
 import { useThemeStore } from '@/stores/themeStore';
 import closeNormalIcon from '@/assets/macos-traffic-lights/1-close-1-normal.svg';
 import closeHoverIcon from '@/assets/macos-traffic-lights/2-close-2-hover.svg';
@@ -24,6 +25,8 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
   const matches = useMatches();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useThemeStore();
+  const showTitle = useNavTitleStore((state) => state.showTitle);
+  const episodeTitle = useNavTitleStore((state) => state.episodeTitle);
 
   const appWindow = useMemo<TauriWindow | null>(() => {
     if (!isTauriEnv()) return null;
@@ -37,15 +40,9 @@ export function TitleBar({ onSettingsClick }: TitleBarProps) {
   const leafMatch = matches[matches.length - 1];
   const normalizedPathname = location.pathname.replace(/\/+$/, '') || '/';
   const titleText = (() => {
-    if (leafMatch?.id === 'show-list') {
-      return `剧列表 - ${appTitle}`;
-    }
-    if (leafMatch?.id === 'show-detail' && leafMatch.params.showId) {
-      return `剧 ${leafMatch.params.showId} - ${appTitle}`;
-    }
-    if (leafMatch?.id === 'episode-canvas' && leafMatch.params.episodeId) {
-      return `${leafMatch.params.episodeId} - ${appTitle}`;
-    }
+    if (leafMatch?.id === 'show-list') return `剧列表 - ${appTitle}`;
+    if (leafMatch?.id === 'show-detail') return `${showTitle ?? '...'} - ${appTitle}`;
+    if (leafMatch?.id === 'episode-canvas') return `${episodeTitle ?? '...'} - ${appTitle}`;
     return t('app.title');
   })();
   const showBackButton = normalizedPathname !== '/' && normalizedPathname !== '/shows';

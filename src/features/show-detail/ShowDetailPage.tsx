@@ -14,6 +14,7 @@ import {
 } from '@/api';
 import { call } from '@/api/client';
 import { UiButton } from '@/components/ui/primitives';
+import { useNavTitleStore } from '@/stores/navTitleStore';
 import { storage } from '@/storage';
 
 const ASSET_CATEGORIES: AssetCategory[] = ['character', 'scene', 'prop', 'other'];
@@ -134,6 +135,11 @@ export function ShowDetailPage() {
       isMounted = false;
     };
   }, [showId]);
+
+  useEffect(() => {
+    if (show) useNavTitleStore.getState().setShowTitle(show.title);
+    return () => useNavTitleStore.getState().setShowTitle(null);
+  }, [show]);
 
   useEffect(() => {
     if (show) {
