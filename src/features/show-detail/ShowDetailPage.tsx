@@ -13,6 +13,7 @@ import {
   type Show,
 } from '@/api';
 import { call } from '@/api/client';
+import { PromptDialog } from '@/components/ui/PromptDialog';
 import { UiButton } from '@/components/ui/primitives';
 import { useNavTitleStore } from '@/stores/navTitleStore';
 import { storage } from '@/storage';
@@ -22,6 +23,11 @@ const ASSET_CATEGORIES: AssetCategory[] = ['character', 'scene', 'prop', 'other'
 type AssetApiWithUpdate = typeof assetsApi & {
   updateAsset?: (input: { id: string; name: string }) => Promise<Asset>;
 };
+
+type ShowDetailPromptDialog =
+  | { kind: 'renameShow'; initialValue: string }
+  | { kind: 'newEpisode' }
+  | null;
 
 function isShowNotFoundError(error: unknown): boolean {
   const message = String(error).toLowerCase();
@@ -78,6 +84,7 @@ export function ShowDetailPage() {
   const [coverUploading, setCoverUploading] = useState(false);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null);
+  const [promptDialog, setPromptDialog] = useState<ShowDetailPromptDialog>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<AssetCategory, boolean>>(
@@ -210,25 +217,32 @@ export function ShowDetailPage() {
     setAssets(assetPage.items);
   };
 
-  const handleRenameShow = async () => {
+  const handleRenameShow = () => {
     if (!showId || !show) {
       return;
     }
 
-    const nextTitle = window.prompt(t('showDetail.renameShowTitle'), show.title);
-    const normalizedTitle = nextTitle?.trim();
+    setPromptDialog({ kind: 'renameShow', initialValue: show.title });
+  };
 
-    if (!normalizedTitle || normalizedTitle === show.title) {
+  const confirmRenameShow = async (nextTitle: string) => {
+    if (!showId || !show) {
+      return;
+    }
+
+    if (nextTitle === show.title) {
+      setPromptDialog(null);
       return;
     }
 
     setIsRenamingShow(true);
     try {
       await showsApi.updateShow(showId, {
-        title: normalizedTitle,
+        title: nextTitle,
         description: show.description,
         cover_url: show.cover_url,
       });
+      setPromptDialog(null);
       await refreshShow();
     } catch (error) {
       console.error('Failed to rename show', error);
@@ -284,15 +298,16 @@ export function ShowDetailPage() {
     }
   };
 
-  const handleCreateEpisode = async () => {
+  const handleCreateEpisode = () => {
     if (!showId) {
       return;
     }
 
-    const title = window.prompt(t('showDetail.newEpisodeTitle'));
-    const normalizedTitle = title?.trim();
+    setPromptDialog({ kind: 'newEpisode' });
+  };
 
-    if (!normalizedTitle) {
+  const confirmCreateEpisode = async (title: string) => {
+    if (!showId) {
       return;
     }
 
@@ -300,9 +315,10 @@ export function ShowDetailPage() {
     try {
       await episodesApi.createEpisode({
         show_id: showId,
-        title: normalizedTitle,
+        title,
         episode_number: episodes.length + 1,
       });
+      setPromptDialog(null);
       await refreshEpisodes();
     } catch (error) {
       console.error('Failed to create episode', error);
@@ -755,6 +771,22 @@ export function ShowDetailPage() {
           )}
         </section>
       </main>
+
+      <PromptDialog
+        open={promptDialog?.kind === 'renameShow'}
+        title={t('showDetail.renameShowTitle')}
+        defaultValue={promptDialog?.kind === 'renameShow' ? promptDialog.initialValue : ''}
+        placeholder={t('showDetail.renameTitlePlaceholder')}
+        onCancel={() => setPromptDialog(null)}
+        onConfirm={confirmRenameShow}
+      />
+      <PromptDialog
+        open={promptDialog?.kind === 'newEpisode'}
+        title={t('showDetail.newEpisodeTitle')}
+        placeholder={t('showDetail.episodeTitlePlaceholder')}
+        onCancel={() => setPromptDialog(null)}
+        onConfirm={confirmCreateEpisode}
+      />
     </div>
   );
 }

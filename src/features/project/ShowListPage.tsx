@@ -6,6 +6,7 @@ import { ImageOff, Plus, Trash2 } from 'lucide-react';
 import { showsApi, type Show } from '@/api';
 import { BrandLogo } from '@/components/BrandLogo';
 import { UI_CONTENT_OVERLAY_INSET_CLASS } from '@/components/ui/motion';
+import { PromptDialog } from '@/components/ui/PromptDialog';
 import { UiButton, UiSelect } from '@/components/ui/primitives';
 import { MissingApiKeyHint } from '@/features/settings/MissingApiKeyHint';
 import { listModelProviders } from '@/features/canvas/models';
@@ -14,6 +15,7 @@ import { storage } from '@/storage';
 
 type ShowSortField = 'title' | 'createdAt' | 'updatedAt';
 type SortDirection = 'asc' | 'desc';
+type ShowListPromptDialog = { kind: 'newShow' } | null;
 
 async function fetchShows(): Promise<Show[]> {
   const response = await showsApi.listShows();
@@ -91,6 +93,7 @@ export function ShowListPage() {
   const [loadError, setLoadError] = useState<unknown | null>(null);
   const [isCreatingShow, setIsCreatingShow] = useState(false);
   const [deletingShowId, setDeletingShowId] = useState<string | null>(null);
+  const [promptDialog, setPromptDialog] = useState<ShowListPromptDialog>(null);
   const [sortField, setSortField] = useState<ShowSortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const providerIds = useMemo(() => listModelProviders().map((provider) => provider.id), []);
@@ -133,17 +136,15 @@ export function ShowListPage() {
     setShows(nextShows);
   };
 
-  const handleCreateShow = async () => {
-    const title = window.prompt(t('showList.newShowTitle'));
-    const normalizedTitle = title?.trim();
+  const handleCreateShow = () => {
+    setPromptDialog({ kind: 'newShow' });
+  };
 
-    if (!normalizedTitle) {
-      return;
-    }
-
+  const confirmCreateShow = async (title: string) => {
     setIsCreatingShow(true);
     try {
-      const newShow = await showsApi.createShow({ title: normalizedTitle });
+      const newShow = await showsApi.createShow({ title });
+      setPromptDialog(null);
       await refreshShows();
       navigate(`/shows/${newShow.id}`);
     } catch (error) {
@@ -324,6 +325,14 @@ export function ShowListPage() {
           </div>
         )}
       </div>
+
+      <PromptDialog
+        open={promptDialog?.kind === 'newShow'}
+        title={t('showList.newShowTitle')}
+        placeholder={t('showList.showTitlePlaceholder')}
+        onCancel={() => setPromptDialog(null)}
+        onConfirm={confirmCreateShow}
+      />
 
       {(isLoadingShows || isCreatingShow || deletingShowId) && (
         <div className={`pointer-events-none fixed ${UI_CONTENT_OVERLAY_INSET_CLASS} bg-black/10`} />
