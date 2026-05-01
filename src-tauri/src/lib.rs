@@ -2,6 +2,13 @@ pub mod ai;
 pub mod commands;
 pub mod providers;
 
+#[path = "commands/assets.rs"]
+mod assets;
+#[path = "commands/episodes.rs"]
+mod episodes;
+#[path = "commands/shows.rs"]
+mod shows;
+
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -196,6 +203,19 @@ pub fn run() {
             project_state::update_project_script_md,
             project_state::rename_project_record,
             project_state::delete_project_record,
+            shows::list_shows,
+            shows::create_show,
+            shows::get_show,
+            shows::update_show,
+            shows::delete_show,
+            episodes::list_episodes,
+            episodes::create_episode,
+            episodes::delete_episode,
+            episodes::update_episode_meta,
+            assets::list_assets,
+            assets::create_asset,
+            assets::update_asset,
+            assets::delete_asset,
             system::get_runtime_system_info,
             update::check_latest_release_tag,
         ])
