@@ -273,42 +273,54 @@ export function ShowListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {sortedShows.map((show) => (
-              <div
-                key={show.id}
-                onClick={() => navigate(`/shows/${show.id}`)}
-                className="group relative cursor-pointer overflow-visible rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
-              >
-                <div className="pointer-events-none absolute bottom-3 right-3 z-0 origin-bottom-right transition-transform duration-[180ms] ease-out [filter:drop-shadow(var(--show-cover-shadow))] [transform:translate(0,_0)_rotate(-7deg)_scale(1)] group-hover:[transform:translate(0,_-3px)_rotate(-10deg)_scale(1.03)]">
-                  <ShowCover coverKey={show.cover_url} />
-                </div>
-                <div className="relative z-10">
-                  <div className="mb-4 h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:show-card-record-pulse_180ms_ease-out_1]" />
-                  <div className="mb-3 flex items-start justify-between gap-3">
-                    <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-6 text-text-dark">
-                      {show.title}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={(event) => void handleDeleteShow(show.id, event)}
-                      disabled={deletingShowId === show.id}
-                      className="shrink-0 rounded p-1 text-text-muted opacity-0 transition-[background-color,color,opacity] hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))] disabled:cursor-not-allowed disabled:opacity-40 group-hover:opacity-100"
-                      title={t('common.delete')}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+            {sortedShows.map((show) => {
+              const isDone =
+                show.episode_count > 0 && show.done_episode_count === show.episode_count;
+
+              return (
+                <div
+                  key={show.id}
+                  onClick={() => navigate(`/shows/${show.id}`)}
+                  className="group relative cursor-pointer overflow-visible rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
+                >
+                  <div className="pointer-events-none absolute bottom-3 right-3 z-0 origin-bottom-right transition-transform duration-[180ms] ease-out [filter:drop-shadow(var(--show-cover-shadow))] [transform:translate(0,_0)_rotate(-7deg)_scale(1)] group-hover:[transform:translate(0,_-3px)_rotate(-10deg)_scale(1.03)]">
+                    <ShowCover coverKey={show.cover_url} />
                   </div>
-                  <div className="max-w-[calc(100%_-_80px)] space-y-1 font-mono text-xs leading-5 text-text-muted">
-                    <p>
-                      {t('project.modified')}: {formatDate(show.updated_at)}
-                    </p>
-                    <p>
-                      {t('project.created')}: {formatDate(show.created_at)}
-                    </p>
+                  <div className="relative z-10">
+                    <div
+                      aria-label={isDone ? t('showList.completedBadge') : ''}
+                      className={`mb-4 h-2 w-2 origin-center ${
+                        isDone
+                          ? 'bg-[var(--state-success)] [animation:pulse-success_2s_ease-out_infinite]'
+                          : 'bg-[var(--accent)]'
+                      } group-hover:[animation:show-card-record-pulse_180ms_ease-out_1]`}
+                    />
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-6 text-text-dark">
+                        {show.title}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={(event) => void handleDeleteShow(show.id, event)}
+                        disabled={deletingShowId === show.id}
+                        className="shrink-0 rounded p-1 text-text-muted opacity-0 transition-[background-color,color,opacity] hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))] disabled:cursor-not-allowed disabled:opacity-40 group-hover:opacity-100"
+                        title={t('common.delete')}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="max-w-[calc(100%_-_80px)] space-y-1 font-mono text-xs leading-5 text-text-muted">
+                      <p>
+                        {t('project.modified')}: {formatDate(show.updated_at)}
+                      </p>
+                      <p>
+                        {t('project.created')}: {formatDate(show.created_at)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

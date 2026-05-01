@@ -650,6 +650,7 @@ export function ShowDetailPage() {
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               {sortedEpisodes.map((episode, index) => {
                 const episodeNumber = episode.episode_number ?? index + 1;
+                const isDone = episode.is_done === true;
 
                 return (
                   <div
@@ -658,7 +659,14 @@ export function ShowDetailPage() {
                     className="group cursor-pointer rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
-                      <div className="h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:episode-card-record-pulse_180ms_ease-out_1]" />
+                      <div
+                        aria-label={isDone ? t('showDetail.completedBadge') : ''}
+                        className={`h-2 w-2 origin-center ${
+                          isDone
+                            ? 'bg-[var(--state-success)] [animation:pulse-success_2s_ease-out_infinite]'
+                            : 'bg-[var(--accent)]'
+                        } group-hover:[animation:episode-card-record-pulse_180ms_ease-out_1]`}
+                      />
                       <button
                         type="button"
                         onClick={(event) => void handleDeleteEpisode(episode.id, event)}

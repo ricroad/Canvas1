@@ -316,7 +316,8 @@
     "confirmDeleteShow": "Confirm delete this show?",
     "emptyTitle": "Welcome to Canvas Creation",
     "emptyHint": "Create your first show to start",
-    "createFirst": "+ Create show"
+    "createFirst": "+ Create show",
+    "completedBadge": "Completed"
   },
   "showDetail": {
     "notFound": "Show not found or deleted",
@@ -329,6 +330,7 @@
     "deleteShow": "Delete Show",
     "confirmDeleteShow": "Delete this show? All episodes and assets will be lost.",
     "assetLibrary": "Asset Library",
+    "completedBadge": "Done",
     "assetCategoryEmpty": "No {{category}} yet",
     "assetCategory": {
       "character": "Character",

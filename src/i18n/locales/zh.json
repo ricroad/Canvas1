@@ -343,7 +343,8 @@
     "confirmDeleteShow": "确认删除这部剧？",
     "emptyTitle": "欢迎来到无限画布",
     "emptyHint": "新建第一部剧开始创作",
-    "createFirst": "+ 新建剧"
+    "createFirst": "+ 新建剧",
+    "completedBadge": "已完结"
   },
   "showDetail": {
     "notFound": "剧不存在或已删除",
@@ -356,6 +357,7 @@
     "deleteShow": "删除剧",
     "confirmDeleteShow": "确认删除这部剧吗？删除后所有单集和资产都会丢失。",
     "assetLibrary": "剧资产库",
+    "completedBadge": "已完成",
     "assetCategoryEmpty": "暂无{{category}}",
     "assetCategory": {
       "character": "人物",
