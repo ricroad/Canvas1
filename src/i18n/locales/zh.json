@@ -348,12 +348,16 @@
     },
     "uploadAsset": "上传",
     "uploadComingSoon": "上传功能即将上线",
+    "uploading": "上传中…",
+    "uploadFailed": "上传失败",
+    "assetMissing": "资产文件丢失",
     "episodes": "单集",
     "newEpisode": "新建单集",
     "newEpisodeTitle": "请输入单集标题",
     "episodeNumber": "第 {{n}} 集",
     "confirmDeleteEpisode": "确认删除这一集吗？画布数据将一并丢失。",
-    "loadFailed": "加载失败"
+    "loadFailed": "加载失败",
+    "confirmDeleteAsset": "确认删除该资产吗？"
   },
   "project": {
     "title": "项目管理",

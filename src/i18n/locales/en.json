@@ -321,12 +321,16 @@
     },
     "uploadAsset": "Upload",
     "uploadComingSoon": "Upload coming soon",
+    "uploading": "Uploading...",
+    "uploadFailed": "Upload failed",
+    "assetMissing": "Asset file missing",
     "episodes": "Episodes",
     "newEpisode": "New Episode",
     "newEpisodeTitle": "Enter episode title",
     "episodeNumber": "Episode {{n}}",
     "confirmDeleteEpisode": "Delete this episode? Canvas data will be lost.",
-    "loadFailed": "Load failed"
+    "loadFailed": "Load failed",
+    "confirmDeleteAsset": "Delete this asset?"
   },
   "project": {
     "title": "Projects",
