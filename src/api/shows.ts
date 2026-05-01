@@ -25,8 +25,12 @@ export interface CreateShowInput {
 }
 
 export interface UpdateShowInput {
-  title: string;
+  title?: string;
   description?: string | null;
+  /**
+   * cover_url stores a storage_key, not a resolved URL.
+   * Call storage.getObjectUrl(storage_key) at render time.
+   */
   cover_url?: string | null;
 }
 

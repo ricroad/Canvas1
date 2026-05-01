@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Box, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Box, ImagePlus, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import {
   assetsApi,
@@ -75,7 +75,9 @@ export function ShowDetailPage() {
   const [isDeletingShow, setIsDeletingShow] = useState(false);
   const [isCreatingEpisode, setIsCreatingEpisode] = useState(false);
   const [isUploading, setUploading] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<AssetCategory, boolean>>(
     createExpandedAssetSections
   );
@@ -203,6 +205,31 @@ export function ShowDetailPage() {
       window.alert(t('showDetail.loadFailed'));
     } finally {
       setIsRenamingShow(false);
+    }
+  };
+
+  const handleUploadCover = async (file: File) => {
+    if (!show) {
+      return;
+    }
+
+    setCoverUploading(true);
+    try {
+      const coverAssetId = `cover-${show.id}`;
+      const { storage_key } = await storage.putObject({
+        showId: show.id,
+        assetId: coverAssetId,
+        file,
+        mimeType: file.type,
+      });
+
+      await showsApi.updateShow(show.id, { cover_url: storage_key });
+      await refreshShow();
+    } catch (error) {
+      console.error('Failed to upload show cover', error);
+      window.alert(`${t('showDetail.coverUploadFailed')}: ${String(error)}`);
+    } finally {
+      setCoverUploading(false);
     }
   };
 
@@ -432,6 +459,34 @@ export function ShowDetailPage() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={!show || coverUploading}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file) {
+                  void handleUploadCover(file);
+                }
+                event.currentTarget.value = '';
+              }}
+            />
+            <UiButton
+              type="button"
+              variant="ghost"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!show || coverUploading}
+              className="gap-2"
+            >
+              {coverUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ImagePlus className="h-4 w-4" />
+              )}
+              {coverUploading ? t('showDetail.uploadingCover') : t('showDetail.changeCover')}
+            </UiButton>
             <UiButton
               type="button"
               variant="ghost"
