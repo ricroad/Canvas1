@@ -131,7 +131,7 @@ export function TitleBar({ onSettingsClick, showBackButton, onBackClick }: Title
             <ArrowLeft className="w-4 h-4 text-text-muted hover:text-text-dark" />
           </button>
         )}
-        <BrandLogo size={18} className="mr-2" />
+        <BrandLogo size={20} variant="mark" className="mr-2" />
         <span className="text-sm font-semibold text-text-dark">
           {titleText}
         </span>
