@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Box, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Box, Loader2, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 
 import {
   assetsApi,
@@ -13,6 +13,7 @@ import {
   type Show,
 } from '@/api';
 import { UiButton } from '@/components/ui/primitives';
+import { storage } from '@/storage';
 
 const ASSET_CATEGORIES: AssetCategory[] = ['character', 'scene', 'prop', 'other'];
 
@@ -43,6 +44,7 @@ export function ShowDetailPage() {
   const [isRenamingShow, setIsRenamingShow] = useState(false);
   const [isDeletingShow, setIsDeletingShow] = useState(false);
   const [isCreatingEpisode, setIsCreatingEpisode] = useState(false);
+  const [isUploading, setUploading] = useState(false);
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -127,6 +129,15 @@ export function ShowDetailPage() {
 
     const episodePage = await episodesApi.listEpisodes({ show_id: showId });
     setEpisodes(episodePage.items);
+  };
+
+  const refreshAssets = async () => {
+    if (!showId) {
+      return;
+    }
+
+    const assetPage = await assetsApi.listAssets({ show_id: showId });
+    setAssets(assetPage.items);
   };
 
   const handleRenameShow = async () => {
@@ -225,6 +236,63 @@ export function ShowDetailPage() {
       window.alert(t('showDetail.loadFailed'));
     } finally {
       setDeletingEpisodeId(null);
+    }
+  };
+
+  const handleUpload = async (category: AssetCategory, files: FileList | null) => {
+    const selectedFiles = files ? Array.from(files) : [];
+
+    if (!showId || selectedFiles.length === 0) {
+      return;
+    }
+
+    setUploading(true);
+    try {
+      for (const file of selectedFiles) {
+        const assetId = crypto.randomUUID();
+        const { storage_key } = await storage.putObject({
+          showId,
+          assetId,
+          file,
+          mimeType: file.type,
+        });
+
+        await assetsApi.createAsset({
+          show_id: showId,
+          category,
+          name: file.name,
+          storage_key,
+          mime_type: file.type,
+          size_bytes: file.size,
+        });
+      }
+
+      await refreshAssets();
+    } catch (error) {
+      console.error('Failed to upload asset', error);
+      window.alert(`${t('showDetail.uploadFailed')}: ${String(error)}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteAsset = async (asset: Asset) => {
+    if (!window.confirm(t('showDetail.confirmDeleteAsset'))) {
+      return;
+    }
+
+    try {
+      try {
+        await storage.deleteObject(asset.storage_key);
+      } catch (error) {
+        console.warn('Failed to delete asset file', error);
+      }
+
+      await assetsApi.deleteAsset(asset.id);
+      await refreshAssets();
+    } catch (error) {
+      console.error('Failed to delete asset', error);
+      window.alert(t('showDetail.loadFailed'));
     }
   };
 
@@ -352,21 +420,38 @@ export function ShowDetailPage() {
                       {t(`showDetail.assetCategory.${category}`)}{' '}
                       <span className="text-text-muted">({categoryAssets.length})</span>
                     </h3>
-                    <span
-                      className="inline-flex shrink-0 cursor-not-allowed"
-                      onClick={() => window.alert(t('showDetail.uploadComingSoon'))}
+                    <label
+                      className={`inline-flex shrink-0 ${
+                        !show || isUploading ? 'pointer-events-none' : 'cursor-pointer'
+                      }`}
                     >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        disabled={!show || isUploading}
+                        onChange={(event) => {
+                          const files = event.currentTarget.files;
+                          void handleUpload(category, files);
+                          event.currentTarget.value = '';
+                        }}
+                      />
                       <UiButton
                         type="button"
                         variant="ghost"
                         size="sm"
-                        disabled
+                        disabled={!show || isUploading}
                         className="pointer-events-none gap-1.5"
                       >
-                        <Upload className="h-3.5 w-3.5" />
-                        {t('showDetail.uploadAsset')}
+                        {isUploading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="h-3.5 w-3.5" />
+                        )}
+                        {isUploading ? t('showDetail.uploading') : t('showDetail.uploadAsset')}
                       </UiButton>
-                    </span>
+                    </label>
                   </div>
 
                   {categoryAssets.length === 0 ? (
@@ -374,21 +459,11 @@ export function ShowDetailPage() {
                   ) : (
                     <ul className="space-y-2">
                       {categoryAssets.map((asset) => (
-                        <li
+                        <AssetItem
                           key={asset.id}
-                          className="flex items-center gap-2 rounded-md bg-bg-dark/40 px-2 py-1.5 text-sm text-text-dark"
-                        >
-                          <Box className="h-4 w-4 shrink-0 text-text-muted" />
-                          <span className="min-w-0 flex-1 truncate">{asset.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => window.alert(t('showDetail.uploadComingSoon'))}
-                            className="shrink-0 rounded p-1 text-text-muted transition-colors hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))]"
-                            title={t('common.delete')}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </li>
+                          asset={asset}
+                          onDelete={handleDeleteAsset}
+                        />
                       ))}
                     </ul>
                   )}
@@ -464,5 +539,85 @@ export function ShowDetailPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+interface AssetItemProps {
+  asset: Asset;
+  onDelete: (asset: Asset) => Promise<void>;
+}
+
+function AssetItem({ asset, onDelete }: AssetItemProps) {
+  const { t } = useTranslation();
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [isMissing, setIsMissing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    setObjectUrl(null);
+    setIsMissing(false);
+
+    storage
+      .getObjectUrl(asset.storage_key)
+      .then((url) => {
+        if (isMounted) {
+          setObjectUrl(url);
+        }
+      })
+      .catch((error) => {
+        console.warn('Failed to resolve asset URL', error);
+        if (isMounted) {
+          setIsMissing(true);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [asset.storage_key]);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete(asset);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <li className="group flex items-center gap-2 rounded-md bg-bg-dark/40 px-2 py-1.5 text-sm text-text-dark">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-bg-dark/70 text-text-muted">
+        {objectUrl && !isMissing ? (
+          <img
+            src={objectUrl}
+            alt={asset.name}
+            className="h-10 w-10 object-cover"
+            onError={() => setIsMissing(true)}
+          />
+        ) : (
+          <Box className="h-4 w-4" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate">{asset.name}</div>
+        {isMissing && (
+          <div className="truncate text-[11px] leading-4 text-text-muted">
+            {t('showDetail.assetMissing')}
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => void handleDelete()}
+        disabled={isDeleting}
+        className="shrink-0 rounded p-1 text-text-muted opacity-0 transition-colors hover:bg-bg-dark hover:text-[rgb(var(--state-error-rgb))] disabled:cursor-not-allowed disabled:opacity-40 group-hover:opacity-100"
+        title={t('common.delete')}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </li>
   );
 }
