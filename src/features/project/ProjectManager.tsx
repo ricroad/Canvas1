@@ -86,6 +86,15 @@ export function ProjectManager() {
 
   return (
     <div className="ui-scrollbar h-full w-full overflow-auto p-8">
+      <style>
+        {`
+          @keyframes project-card-record-pulse {
+            50% {
+              transform: scale(1.2);
+            }
+          }
+        `}
+      </style>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -138,13 +147,14 @@ export function ProjectManager() {
               <div
                 key={project.id}
                 onClick={() => openProject(project.id)}
-                className="bg-surface-dark border border-border-dark rounded-lg p-4 cursor-pointer hover:border-primary/50 hover:shadow-lg transition-all group"
+                className="group cursor-pointer rounded-cinema border border-border-dark bg-[var(--ui-surface-panel)] p-4 shadow-panel transition-[transform,border-color,box-shadow] duration-[180ms] ease-out hover:-translate-y-0.5 hover:border-brand-reel-500/50 hover:shadow-card-hover"
               >
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-text-dark truncate flex-1">
+                <div className="mb-4 h-2 w-2 origin-center bg-brand-reel-500 group-hover:[animation:project-card-record-pulse_180ms_ease-out_1]" />
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 className="min-w-0 flex-1 truncate text-base font-semibold leading-6 text-text-dark">
                     {project.name}
                   </h3>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                       type="button"
                       onClick={(e) => handleRenameClick(project.id, project.name, e)}
@@ -159,11 +169,11 @@ export function ProjectManager() {
                       className="p-1 hover:bg-bg-dark rounded"
                       title={t('project.delete')}
                     >
-                      <Trash2 className="w-4 h-4 text-text-muted hover:text-red-500" />
+                      <Trash2 className="w-4 h-4 text-text-muted hover:text-[rgb(var(--state-error-rgb))]" />
                     </button>
                   </div>
                 </div>
-                <div className="text-xs text-text-muted">
+                <div className="space-y-1 font-mono text-xs leading-5 text-text-muted">
                   <p>
                     {t('project.modified')}: {formatDate(project.updatedAt)}
                   </p>
