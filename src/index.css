@@ -65,6 +65,12 @@
   --ui-radius-2xl: 20px;
   --node-radius: 12px;
   --node-inner-radius: var(--node-radius);
+  --node-cabin-height: 24px;
+  --node-cabin-bg: rgb(var(--brand-ink-rgb) / 0.04);
+  --node-cabin-dot-idle: var(--brand-ink-500);
+  --node-cabin-dot-generating: var(--accent);
+  --node-cabin-dot-complete: var(--state-success);
+  --node-cabin-dot-error: var(--state-error);
   --shadow-panel:
     0 1px 2px rgb(var(--brand-ink-rgb) / 0.04),
     0 12px 28px rgb(var(--brand-ink-rgb) / 0.08);
@@ -141,6 +147,7 @@
   --ui-radius-2xl: 20px;
   --node-radius: 12px;
   --node-inner-radius: var(--node-radius);
+  --node-cabin-bg: var(--brand-ink-900);
   --shadow-panel:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 12px 28px rgba(0, 0, 0, 0.5);
@@ -315,6 +322,16 @@ html[data-platform='macos'] #root {
   border-radius: 8px;
 }
 
+.react-flow__node.selected {
+  outline: none;
+  box-shadow: var(--shadow-spotlight);
+}
+
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none;
+}
+
 .react-flow__handle {
   width: 8px;
   height: 8px;
@@ -325,6 +342,17 @@ html[data-platform='macos'] #root {
 .react-flow__node .react-flow__handle[data-handle-connected='true'],
 .react-flow__node .react-flow__handle[data-magnetic-visible='true'] {
   opacity: 1;
+}
+
+@keyframes node-cabin-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .magnetic-handle {

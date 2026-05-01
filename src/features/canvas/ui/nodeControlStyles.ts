@@ -9,13 +9,36 @@ export const NODE_CONTROL_PRIMARY_BUTTON_CLASS =
 
 export const NODE_CONTROL_ICON_CLASS = 'h-3 w-3';
 
+/*
+ * Phase 3.4 – Node Cabin Bar
+ * --node-cabin-height: 24px;
+ * --node-cabin-bg: rgba(11,11,13,0.04); light mode
+ * dark: --node-cabin-bg overridden to var(--brand-ink-900) via .dark
+ * --node-cabin-dot-idle: var(--brand-ink-500);
+ * --node-cabin-dot-generating: var(--accent);
+ * --node-cabin-dot-complete: var(--state-success);
+ * --node-cabin-dot-error: var(--state-error);
+ */
+export const NODE_CABIN_BAR_CLASS =
+  'relative h-[var(--node-cabin-height)] bg-[var(--node-cabin-bg)]';
+
+export const NODE_CABIN_DOT_BASE_CLASS =
+  'absolute left-2 top-2 h-2 w-2 rounded-full';
+
+export const NODE_CABIN_DOT_STATUS_CLASS = {
+  idle: 'bg-[var(--node-cabin-dot-idle)]',
+  generating: 'bg-[var(--node-cabin-dot-generating)] animate-[node-cabin-pulse_1s_ease-in-out_infinite]',
+  complete: 'bg-[var(--node-cabin-dot-complete)]',
+  error: 'bg-[var(--node-cabin-dot-error)]',
+} as const;
+
 export const VIDEO_RESULT_BASE_WIDTH = 320;
 export const VIDEO_RESULT_TOP_BAR_HEIGHT = 28;
 export const VIDEO_RESULT_NODE_RADIUS_CLASS = 'rounded-[var(--node-radius)]';
 export const VIDEO_RESULT_NODE_SHELL_CLASS =
   'border-[rgba(15,23,42,0.22)] bg-surface-dark/90 dark:border-[rgba(255,255,255,0.22)]';
 export const VIDEO_RESULT_NODE_SELECTED_CLASS =
-  'border-accent shadow-[0_0_0_1px_rgba(59,130,246,0.32)]';
+  'border-accent shadow-[var(--shadow-spotlight)]';
 export const VIDEO_RESULT_NODE_HOVER_CLASS =
   'hover:border-[rgba(15,23,42,0.34)] dark:hover:border-[rgba(255,255,255,0.34)]';
 export const VIDEO_RESULT_TOP_BAR_CLASS =
