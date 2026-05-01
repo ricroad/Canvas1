@@ -4,6 +4,7 @@ import { Minus, X, Maximize2, Settings, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Moon, Sun, Languages } from 'lucide-react';
 import { isTauriEnv } from '@/commands/platform';
+import { BrandLogo } from '@/components/BrandLogo';
 import { useThemeStore } from '@/stores/themeStore';
 import { useProjectStore } from '@/stores/projectStore';
 import closeNormalIcon from '@/assets/macos-traffic-lights/1-close-1-normal.svg';
@@ -130,6 +131,7 @@ export function TitleBar({ onSettingsClick, showBackButton, onBackClick }: Title
             <ArrowLeft className="w-4 h-4 text-text-muted hover:text-text-dark" />
           </button>
         )}
+        <BrandLogo size={18} className="mr-2" />
         <span className="text-sm font-semibold text-text-dark">
           {titleText}
         </span>
