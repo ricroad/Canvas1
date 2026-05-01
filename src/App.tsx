@@ -12,7 +12,7 @@ import { ProjectManager } from './features/project/ProjectManager';
 import { useThemeStore } from './stores/themeStore';
 import { useProjectStore } from './stores/projectStore';
 import { useCanvasStore } from './stores/canvasStore';
-import { useSettingsStore } from './stores/settingsStore';
+import { DEFAULT_ACCENT_COLOR, useSettingsStore } from './stores/settingsStore';
 import {
   getNodePrimaryImageUrl,
   isVideoGenNode,
@@ -29,10 +29,10 @@ import {
   type SettingsCategory,
 } from './features/settings/settingsEvents';
 
-function toRgbCssValue(hexColor: string): string {
+function toRgbCssValue(hexColor: string): string | null {
   const hex = hexColor.replace('#', '');
   if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
-    return '59 130 246';
+    return null;
   }
   const r = Number.parseInt(hex.slice(0, 2), 16);
   const g = Number.parseInt(hex.slice(2, 4), 16);
@@ -78,9 +78,25 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const normalized = accentColor.startsWith('#') ? accentColor : `#${accentColor}`;
+    const trimmedAccentColor = accentColor.trim();
+    if (trimmedAccentColor === DEFAULT_ACCENT_COLOR) {
+      root.style.removeProperty('--accent');
+      root.style.removeProperty('--accent-rgb');
+      return;
+    }
+
+    const normalized = trimmedAccentColor.startsWith('#')
+      ? trimmedAccentColor
+      : `#${trimmedAccentColor}`;
+    const rgbValue = toRgbCssValue(normalized);
+    if (!rgbValue) {
+      root.style.removeProperty('--accent');
+      root.style.removeProperty('--accent-rgb');
+      return;
+    }
+
     root.style.setProperty('--accent', normalized);
-    root.style.setProperty('--accent-rgb', toRgbCssValue(normalized));
+    root.style.setProperty('--accent-rgb', rgbValue);
   }, [accentColor]);
 
   useEffect(() => {

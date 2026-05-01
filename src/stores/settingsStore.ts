@@ -19,6 +19,7 @@ export const DEFAULT_GRSAI_NANO_BANANA_PRO_MODEL = 'nano-banana-pro';
 export const DEFAULT_PROJECT_IMAGE_MODEL_ID = 'kie/nano-banana-2';
 export const DEFAULT_PROJECT_IMAGE_SIZE = '2K';
 export const DEFAULT_PROJECT_IMAGE_ASPECT_RATIO = 'auto';
+export const DEFAULT_ACCENT_COLOR = 'var(--accent)';
 export type StoryboardPlanningSkillId = (typeof STORYBOARD_PLANNING_SKILLS)[number]['id'];
 
 export interface KlingSettings {
@@ -95,8 +96,11 @@ const HEX_COLOR_PATTERN = /^#?[0-9a-fA-F]{6}$/;
 
 function normalizeHexColor(input: string): string {
   const trimmed = input.trim();
+  if (trimmed === DEFAULT_ACCENT_COLOR) {
+    return DEFAULT_ACCENT_COLOR;
+  }
   if (!HEX_COLOR_PATTERN.test(trimmed)) {
-    return '#3B82F6';
+    return DEFAULT_ACCENT_COLOR;
   }
   return trimmed.startsWith('#') ? trimmed.toUpperCase() : `#${trimmed.toUpperCase()}`;
 }
@@ -263,7 +267,7 @@ export const useSettingsStore = create<SettingsState>()(
       grsaiCreditTierId: DEFAULT_GRSAI_CREDIT_TIER_ID,
       uiRadiusPreset: 'default',
       themeTonePreset: 'neutral',
-      accentColor: '#3B82F6',
+      accentColor: DEFAULT_ACCENT_COLOR,
       canvasEdgeRoutingMode: 'spline',
       autoCheckAppUpdateOnLaunch: true,
       enableUpdateDialog: true,

@@ -7,7 +7,7 @@ import remarkBreaks from 'remark-breaks';
 import { isTauriEnv } from '@/commands/platform';
 import { testKlingConnection } from '@/commands/ai';
 import { openFileDialog, openUrl } from '@/commands/web/dialog';
-import { useSettingsStore } from '@/stores/settingsStore';
+import { DEFAULT_ACCENT_COLOR, useSettingsStore } from '@/stores/settingsStore';
 import { UiCheckbox, UiSelect } from '@/components/ui';
 import { UI_CONTENT_OVERLAY_INSET_CLASS, UI_DIALOG_TRANSITION_MS } from '@/components/ui/motion';
 import { useDialogTransition } from '@/components/ui/useDialogTransition';
@@ -57,6 +57,24 @@ const LLM_PROVIDERS = [
   { id: 'moonshot', name: 'Moonshot Kimi', label: 'Moonshot Kimi' },
   { id: 'google', name: 'Google Gemini', label: 'Google Gemini' },
 ];
+
+const HEX_INPUT_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+
+function readAccentTokenValue(): string {
+  if (typeof document === 'undefined') {
+    return '';
+  }
+  return getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+}
+
+function resolveAccentInputValue(value: string): string {
+  const trimmed = value.trim();
+  if (HEX_INPUT_COLOR_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+  const tokenValue = readAccentTokenValue();
+  return HEX_INPUT_COLOR_PATTERN.test(tokenValue) ? tokenValue : trimmed;
+}
 
 function SettingsCheckboxCard({
   title,
@@ -224,6 +242,14 @@ export function SettingsDialog({
   const [localUiRadiusPreset, setLocalUiRadiusPreset] = useState(uiRadiusPreset);
   const [localThemeTonePreset, setLocalThemeTonePreset] = useState(themeTonePreset);
   const [localAccentColor, setLocalAccentColor] = useState(accentColor);
+  const resolvedLocalAccentColor = useMemo(
+    () => resolveAccentInputValue(localAccentColor),
+    [localAccentColor]
+  );
+  const localAccentTextValue =
+    localAccentColor.trim() === DEFAULT_ACCENT_COLOR
+      ? resolvedLocalAccentColor
+      : localAccentColor;
   const [localCanvasEdgeRoutingMode, setLocalCanvasEdgeRoutingMode] = useState(canvasEdgeRoutingMode);
   const [localAutoCheckAppUpdateOnLaunch, setLocalAutoCheckAppUpdateOnLaunch] = useState(
     autoCheckAppUpdateOnLaunch
@@ -1110,20 +1136,20 @@ export function SettingsDialog({
                     <div className="mt-3 flex items-center gap-2">
                       <input
                         type="color"
-                        value={localAccentColor}
+                        value={resolvedLocalAccentColor}
                         onChange={(event) => setLocalAccentColor(event.target.value)}
                         className="h-9 w-12 rounded border border-border-dark bg-surface-dark p-1"
                       />
                       <input
-                        value={localAccentColor}
+                        value={localAccentTextValue}
                         onChange={(event) => setLocalAccentColor(event.target.value)}
-                        placeholder="#3B82F6"
+                        placeholder={DEFAULT_ACCENT_COLOR}
                         className="h-9 flex-1 rounded border border-border-dark bg-surface-dark px-3 text-sm text-text-dark outline-none placeholder:text-text-muted"
                       />
                       <button
                         type="button"
                         className="inline-flex h-9 items-center justify-center rounded border border-border-dark bg-surface-dark px-3 text-xs text-text-dark transition-colors hover:bg-bg-dark"
-                        onClick={() => setLocalAccentColor('#3B82F6')}
+                        onClick={() => setLocalAccentColor(DEFAULT_ACCENT_COLOR)}
                       >
                         {t('settings.resetAccentColor')}
                       </button>

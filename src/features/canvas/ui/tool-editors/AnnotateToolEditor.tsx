@@ -78,6 +78,13 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function readRootCssVariable(name: string): string {
+  if (typeof document === 'undefined') {
+    return '';
+  }
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 function resolveTextBaseSize(image: HTMLImageElement | null): number {
   if (!image) {
     return 1000;
@@ -216,6 +223,7 @@ export function AnnotateToolEditor({ options, onOptionsChange, sourceImageUrl }:
   const stageHostRef = useRef<HTMLDivElement | null>(null);
   const textInputRef = useRef<HTMLTextAreaElement | null>(null);
 
+  const transformerAccentStroke = readRootCssVariable('--accent');
   const color = toText(options.color, '#ff4d4f');
   const textBaseSize = useMemo(() => resolveTextBaseSize(image), [image]);
   const rawLineWidthPercent = toNumber(options.lineWidthPercent, NaN);
@@ -1134,8 +1142,8 @@ export function AnnotateToolEditor({ options, onOptionsChange, sourceImageUrl }:
                     return newBox;
                   }}
                   rotateEnabled={false}
-                  borderStroke="#3b82f6"
-                  anchorStroke="#3b82f6"
+                  borderStroke={transformerAccentStroke || undefined}
+                  anchorStroke={transformerAccentStroke || undefined}
                   anchorFill="#ffffff"
                   anchorSize={8}
                   ignoreStroke
